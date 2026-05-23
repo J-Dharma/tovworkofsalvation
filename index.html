@@ -1843,7 +1843,7 @@ const UI = {
     body.appendChild(notesSec);
 
     // ── Stewardship section — always-editable inline fields
-    const stewSec = this._makeSection('Stewardship details');
+    const stewSec = this._makeSection('Stewardship details ✎');
     const stewGrid = this._buildInlineFields(p);
     stewSec.appendChild(stewGrid);
     body.appendChild(stewSec);
@@ -1954,6 +1954,9 @@ const UI = {
       // Stewardship edits do not count as "discussed" — only notes and action changes do
       saveState();
       UI.renderAll();
+      // Refresh modal header in case name was changed
+      const nameEl = document.getElementById('d-name');
+      if (nameEl) nameEl.textContent = displayName(p);
     };
 
     // Helper: inline text field
