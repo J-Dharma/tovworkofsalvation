@@ -1604,6 +1604,7 @@ const UI = {
                 <span>${m.openActions.length} open action${m.openActions.length!==1?'s':''}</span>
               </span>
               <button class="mtg-print-btn" onclick="event.stopPropagation();UI._printMeeting('ma-${i}')">Print</button>
+              <button class="mtg-print-btn" style="color:#c04040;border-color:rgba(176,48,48,.3);" onclick="event.stopPropagation();App.deleteMeeting('${m.id}')">Delete</button>
             </div>
             <div class="mtg-archive-body" id="ma-${i}">
               <div class="mtg-archive-section">
@@ -2662,6 +2663,14 @@ const App = {
     UI.closeDetail();
     UI.renderAll();
     toast(displayName(p) + ' restored to roster');
+  },
+
+  deleteMeeting(id) {
+    if (!confirm('Delete this meeting record? This cannot be undone.')) return;
+    state.meetingArchive = (state.meetingArchive || []).filter(m => m.id !== id);
+    saveState();
+    UI.renderArchive();
+    toast('Meeting record deleted');
   },
 
   deletePerson(pid) {
