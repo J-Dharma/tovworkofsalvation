@@ -3137,7 +3137,9 @@ const Sync = {
       // Local data is newer overall, but always sync council from cloud —
       // council is admin config, not user data, so cloud always wins for it.
       if (cloudTime <= localTime && cloud.council) {
-        const cloudHasCouncil = Object.values(cloud.council).some(v => v && v.trim());
+        const cloudHasCouncil = Object.values(cloud.council).some(v =>
+          v && (typeof v === 'string' ? v.trim() : (v.name || v.email))
+        );
         if (cloudHasCouncil) {
           state.council = cloud.council;
           try { localStorage.setItem(COUNCIL_KEY, JSON.stringify(state.council)); } catch(e) {}
