@@ -432,9 +432,10 @@ button{cursor:pointer;}
   .navtabs{display:none;}
 
   /* Board: stack panels, show one at a time */
-  .board-split{flex-direction:column;}
-  .split-roster{width:100%!important;min-width:0!important;height:auto;border-right:none;border-bottom:1px solid var(--line);}
-  .split-queue{width:100%!important;}
+  /* height = viewport minus topbar (3rem) minus fixed tab bar (3.5rem) */
+  .board-split{flex-direction:column;height:calc(100svh - 6.5rem);}
+  .split-roster{width:100%!important;min-width:0!important;height:100%!important;border-right:none;}
+  .split-queue{width:100%!important;height:100%!important;}
 
   /* Panel visibility toggled by JS */
   .split-roster.mob-hidden{display:none!important;}
@@ -456,11 +457,9 @@ button{cursor:pointer;}
   /* Use small viewport height so app fits when browser address bar is visible */
   #app{height:100svh;}
 
-  /* Roster split-scroll — constrain height so it scrolls; extra bottom padding clears the fixed tab bar */
-  .split-roster .split-scroll{max-height:calc(100svh - 10rem);overflow-y:auto;padding-bottom:5rem;}
-
-  /* Queue scroll fills remaining space; extra bottom padding clears the fixed tab bar */
-  .split-queue .split-scroll{flex:1;overflow-y:auto;padding-bottom:5rem;}
+  /* Scroll areas fill their panel — panel height already accounts for tab bar */
+  .split-roster .split-scroll{flex:1;overflow-y:auto;max-height:none;padding-bottom:1rem;}
+  .split-queue .split-scroll{flex:1;overflow-y:auto;padding-bottom:1rem;}
 
   /* Modals — full screen on mobile */
   .modal{
@@ -2976,8 +2975,6 @@ const MobNav = {
   init() {
     if (!this.isMobile()) return;
     this.show('roster');
-    const board = document.querySelector('.board-split');
-    if (board) board.style.paddingBottom = '3.5rem';
   },
 };
 
