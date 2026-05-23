@@ -140,6 +140,21 @@ button{cursor:pointer;}
 .queue-empty{padding:32px;text-align:center;color:var(--ink-3);font-size:13px;
   font-style:italic;border:1px dashed var(--line-2);border-radius:var(--r);margin:8px 4px;}
 
+/* ── Meeting notes section ── */
+.mn-add-row{display:flex;gap:6px;margin:6px 4px 8px;}
+.mn-add-row input{flex:1;padding:7px 10px;font-size:13px;border:1px solid var(--line-2);
+  border-radius:6px;outline:none;background:var(--surface);}
+.mn-add-row input:focus{border-color:var(--accent);}
+.mn-add-row button{padding:0 12px;height:32px;border-radius:6px;border:1px solid var(--accent);
+  background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0;}
+.mn-item{display:flex;align-items:flex-start;gap:8px;padding:7px 4px;
+  border-bottom:1px solid var(--line);font-size:13px;color:var(--ink);}
+.mn-item:last-child{border-bottom:none;}
+.mn-item-text{flex:1;line-height:1.4;}
+.mn-del{background:none;border:none;color:var(--ink-4);font-size:14px;cursor:pointer;
+  padding:0 2px;line-height:1;flex-shrink:0;margin-top:1px;}
+.mn-del:hover{color:var(--ink-2);}
+
 /* ── Person card ── */
 .pcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
   border-left:3px solid var(--accent);cursor:pointer;
@@ -990,6 +1005,7 @@ function defaultState() {
     meetingDate: todayISO(),
     meetingActive: false,
     lastMeetingEndDate: null,
+    meetingNotes: [],
     savedAt: null,
     people: [
       { id:'p1', familyName:'Becker', firstNames:'Jonathan',
@@ -1429,6 +1445,22 @@ const UI = {
       handAdded.forEach(p => { html += this._queueCard(p); });
     }
 
+    const notes = state.meetingNotes || [];
+    html += this._sectionHeader('Meeting Notes', notes.length);
+    html += `<div class="mn-add-row">
+      <input id="mn-input" type="text" placeholder="Add a topic or note…" maxlength="300"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();UI._addMeetingNote();}">
+      <button onclick="UI._addMeetingNote()">+</button>
+    </div>`;
+    if (notes.length > 0) {
+      html += `<div class="mn-list">` + notes.map(n =>
+        `<div class="mn-item" data-nid="${n.id}">
+          <span class="mn-item-text">${esc(n.text)}</span>
+          <button class="mn-del" onclick="event.stopPropagation();App.deleteMeetingNote('${n.id}')" title="Delete">×</button>
+        </div>`
+      ).join('') + `</div>`;
+    }
+
     el.innerHTML = html;
     this._bindCardClicks(el);
     el.querySelectorAll('.action-check').forEach(cb => {
@@ -1440,6 +1472,15 @@ const UI = {
       });
     });
 
+  },
+
+  _addMeetingNote() {
+    const inp = document.getElementById('mn-input');
+    if (!inp) return;
+    const text = inp.value.trim();
+    if (!text) return;
+    inp.value = '';
+    App.addMeetingNote(text);
   },
 
   _sectionHeader(label, count, subtitle) {
@@ -2491,10 +2532,10 @@ const UI = {
       });
     });
 
-    this._renderPrintReport(date, records, ao);
+    this._renderPrintReport(date, records, ao, state.meetingNotes || []);
   },
 
-  _renderPrintReport(date, records, ao) {
+  _renderPrintReport(date, records, ao, meetingNotes) {
     const win = window.open('', '_blank');
     win.document.write(`<!DOCTYPE html><html><head>
 <title>TOV Ward Council — ${fmtDate(date)}</title>
@@ -2570,6 +2611,11 @@ ${Object.keys(ao).length ? `<div class="summary">
     </div>`).join('')}
 </div>` : ''}
 
+${meetingNotes && meetingNotes.length ? `<div class="summary">
+  <h2>Meeting Notes</h2>
+  ${meetingNotes.map(n=>`<div class="owner-item"><span>${esc(n.text)}</span></div>`).join('')}
+</div>` : ''}
+
 </body></html>`);
     win.document.close();
     setTimeout(() => win.print(), 400);
@@ -2586,7 +2632,7 @@ ${Object.keys(ao).length ? `<div class="summary">
 
   // ─── After-meeting email report ─────────────────
 
-  _buildReportEmailHTML(date, records, ao) {
+  _buildReportEmailHTML(date, records, ao, meetingNotes) {
     const ownerList = Object.keys(ao).sort();
     const dateStr = fmtDate(date);
     return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f7fa;font-family:Georgia,serif;color:#111;">
@@ -2641,6 +2687,15 @@ ${Object.keys(ao).length ? `<div class="summary">
           </div>
         </div>` : ''}
       </td></tr>
+      ${meetingNotes && meetingNotes.length ? `
+      <tr><td style="padding:0 24px 20px;">
+        <div style="border:1px solid #e2e8ef;border-radius:6px;overflow:hidden;">
+          <div style="background:#edf2f7;padding:8px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#2d4a6a;">Meeting Notes</div>
+          <div style="padding:10px 14px;font-size:13px;">
+            ${meetingNotes.map(n=>`<div style="padding:4px 0;border-bottom:1px solid #f0f0f0;">${esc(n.text)}</div>`).join('')}
+          </div>
+        </div>
+      </td></tr>` : ''}
       <tr><td style="background:#f8fafc;border-top:1px solid #e2e8ef;padding:12px 24px;font-size:11px;color:#a0aec0;text-align:center;">
         Sent from TOV Work of Salvation
       </td></tr>
@@ -2692,7 +2747,7 @@ ${Object.keys(ao).length ? `<div class="summary">
       });
     });
 
-    const html = UI._buildReportEmailHTML(date, records, ao);
+    const html = UI._buildReportEmailHTML(date, records, ao, state.meetingNotes || []);
     const subject = `TOV Ward Council — ${fmtDate(date)}`;
 
     toast('Sending report…');
@@ -2718,7 +2773,7 @@ ${Object.keys(ao).length ? `<div class="summary">
     }));
     const ao = {};
     m.openActions.forEach(a => { if (!ao[a.owner]) ao[a.owner] = []; ao[a.owner].push({ person: a.person, action: a.action||a.text }); });
-    this._renderPrintReport(m.date, records, ao);
+    this._renderPrintReport(m.date, records, ao, m.meetingNotes || []);
   },
 
 
@@ -2926,6 +2981,20 @@ const App = {
     toast('Meeting cancelled — no snapshot saved');
   },
 
+  addMeetingNote(text) {
+    if (!text.trim()) return;
+    if (!state.meetingNotes) state.meetingNotes = [];
+    state.meetingNotes.push({ id: 'mn' + Date.now(), text: text.trim() });
+    saveState();
+    UI.renderQueue();
+  },
+
+  deleteMeetingNote(id) {
+    state.meetingNotes = (state.meetingNotes || []).filter(n => n.id !== id);
+    saveState();
+    UI.renderQueue();
+  },
+
   endMeeting() {
     const nextDate = nextSundayISO();
     state.lastMeetingEndDate = state.meetingDate;
@@ -2971,8 +3040,10 @@ const App = {
       discussed: discussed.map(p => ({ name: displayName(p), org: orgLabels(p), focus: focusById(p.focusId)?.label || '' })),
       openActions,
       peopleRecords,
+      meetingNotes: (state.meetingNotes || []).slice(),
       savedAt: new Date().toISOString(),
     });
+    state.meetingNotes = [];
 
     // Clear hand-added queuedFor stamps for people without open actions.
     // Use nextDate as the threshold so mismatched dates (e.g. todayISO vs Sunday) also get cleared.
