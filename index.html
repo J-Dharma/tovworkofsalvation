@@ -1225,8 +1225,10 @@ const UI = {
       } catch(e) {}
     }
 
-    saveState();
-    
+    // Persist date correction and council migration without stamping savedAt,
+    // so the pull() timestamp comparison can still prefer cloud data.
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+
     this.renderAll();
     Sync.init();
   },
