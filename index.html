@@ -556,9 +556,9 @@ button{cursor:pointer;}
       <div class="brand-name">TOV Work of Salvation</div>
     </div>
 
-    <input class="tb-user" id="tb-user" placeholder="Your name (for notes)"
-      onchange="App.setCurrentUser(this.value)">
     <div class="ml-auto" style="display:flex;align-items:center;gap:6px;">
+      <input class="tb-user" id="tb-user" placeholder="Taking notes…"
+        onchange="App.setCurrentUser(this.value)">
       <div class="sync-pill unconfigured" id="sync-pill" onclick="UI.openSync()">
         <div class="dot"></div><span id="sync-pill-text">Connect sheet</span>
       </div>
@@ -711,7 +711,7 @@ button{cursor:pointer;}
   <div class="modal-foot">
     <button class="btn sm" onclick="UI.closeEndMeeting()">Cancel</button>
     <div style="display:flex;gap:7px;">
-      <button class="btn sm" onclick="window.print()">🖨 Print report</button>
+      <button class="btn sm" onclick="UI._printCurrentMeeting()">🖨 Print report</button>
       <button class="btn sm primary green" onclick="UI.confirmEndMeeting()">✓ End meeting &amp; roll to next</button>
     </div>
   </div>
@@ -723,7 +723,7 @@ button{cursor:pointer;}
   <div class="modal-head">
     <div>
       <div class="modal-name" style="font-size:16px;">Ward Council Members</div>
-      <div class="modal-sub">Names appear in the Bishopric Support dropdown</div>
+
     </div>
   </div>
   <div class="modal-body" style="padding:16px 20px;" id="admin-body"></div>
@@ -818,6 +818,12 @@ function todayISO() { return new Date().toISOString().slice(0,10); }
 function nextSundayISO() {
   const d = new Date(); const day = d.getDay();
   d.setDate(d.getDate() + (day===0 ? 7 : 7-day));
+  return d.toISOString().slice(0,10);
+}
+function currentSundayISO() {
+  // Returns today if Sunday, otherwise the coming Sunday
+  const d = new Date(); const day = d.getDay();
+  d.setDate(d.getDate() + (day===0 ? 0 : 7-day));
   return d.toISOString().slice(0,10);
 }
 
@@ -1202,7 +1208,9 @@ const UI = {
   init() {
     const u = localStorage.getItem('ct-user') || '';
     document.getElementById('tb-user').value = u;
-    state.meetingDate = state.meetingDate || todayISO();
+    // Always sync to the current or next Sunday — never show a stale date
+    state.meetingDate = currentSundayISO();
+    saveState();
     
     this.renderAll();
     Sync.init();
@@ -2039,7 +2047,7 @@ const UI = {
       const name = (cfg[rid] || '').trim();
       const opt = document.createElement('option');
       opt.value = name || role.label;
-      opt.textContent = name ? `${role.label} — ${name}` : role.label;
+      opt.textContent = name ? `${name} — ${role.label}` : role.label;
       if ((p.bishopricSupport||'') === opt.value) opt.selected = true;
       bishSel.appendChild(opt);
     });
@@ -2098,7 +2106,7 @@ const UI = {
       <div class="field" id="nf-by-field"><label>Submitted by</label></div>
       <div class="field"><label>Date submitted</label><input type="date" id="nf-date" value="${todayISO()}"></div>
       <div class="field"><label>Org steward</label><select id="nf-org"><option value="">— Select —</option>${orgOpts}</select></div>
-      <div class="field"><label>Bishopric support</label><select id="nf-bish"><option value="">— Unassigned —</option>${['bishop','counselor1','counselor2'].map(rid=>{const role=COUNCIL_ROLES.find(r=>r.id===rid);const name=(loadCouncil()[rid]||'').trim();const val=name||role.label;return `<option value="${esc(val)}">${esc(name?role.label+' — '+name:role.label)}</option>`;}).join('')}<option value="__other__">Other…</option></select></div>
+      <div class="field"><label>Bishopric support</label><select id="nf-bish"><option value="">— Unassigned —</option>${['bishop','counselor1','counselor2'].map(rid=>{const role=COUNCIL_ROLES.find(r=>r.id===rid);const name=(loadCouncil()[rid]||'').trim();const val=name||role.label;return `<option value="${esc(val)}">${esc(name?name+' — '+role.label:role.label)}</option>`;}).join('')}<option value="__other__">Other…</option></select></div>
       <div class="field"><label>Work of Salvation focus</label><select id="nf-focus"><option value="">— Select —</option>${focusOpts}</select></div>
       <div class="field"><label>Type</label><select id="nf-gender"><option value="u">— Select —</option><option value="f">Sister</option><option value="m">Brother</option><option value="family">Family</option></select></div>
       <div class="field" style="grid-column:1/-1"><label>Initial note / context</label><textarea id="nf-note" placeholder="Why is the council discussing this person?"></textarea></div>`;
@@ -2133,7 +2141,7 @@ const UI = {
       dateSubmitted: document.getElementById('nf-date')?.value||'',
       orgId:       document.getElementById('nf-org')?.value||'',
       focusId:     document.getElementById('nf-focus')?.value||'',
-      bishopricSupport: (()=>{ const v=document.getElementById('nf-bish')?.value||''; if(v==='__other__'){return prompt('Enter name:')||'';}return v; })(),
+      bishopricSupport: (() => { const v = document.getElementById('nf-bish')?.value||''; return v === '__other__' ? '' : v; })(),
       gender: document.getElementById('nf-gender')?.value || 'u',
       covenantPath: [],
       currentStep: null,
@@ -2220,6 +2228,125 @@ const UI = {
 
   // ─── Sync modal ──────────────────────────────────
 
+  _printCurrentMeeting() {
+    const date = state.meetingDate;
+    const queue = state.people.filter(p =>
+      p.status === 'active' && (p.queuedFor === date || p.actions.some(a => a.open))
+    );
+    const discussed = queue.filter(p => p.lastDiscussed === date);
+
+    const records = discussed.map(p => {
+      const todayNotes = (p.history || []).filter(h =>
+        !h.actionId && h.at && h.at.slice(0,10) === date
+      );
+      const openActs   = (p.actions || []).filter(a => a.open);
+      const closedToday = (p.actions || []).filter(a =>
+        !a.open && a.closedAt && a.closedAt.slice(0,10) === date
+      );
+      return {
+        name: displayName(p),
+        org: orgById(p.orgId)?.label || '',
+        focus: focusById(p.focusId)?.label || '',
+        bishopricSupport: p.bishopricSupport || '',
+        notes: todayNotes.map(n => ({ text: n.text, author: n.author })),
+        openActions: openActs.map(a => ({ text: a.text, owner: a.owner, notes: a.notes || [] })),
+        closedToday: closedToday.map(a => ({ text: a.text, owner: a.owner, closedNote: a.closedNote || '', notes: a.notes || [] })),
+      };
+    });
+
+    const ao = {};
+    // Owner summary covers ALL open actions in the queue, not just discussed today
+    queue.forEach(p => {
+      (p.actions || []).filter(a => a.open).forEach(a => {
+        if (!ao[a.owner]) ao[a.owner] = [];
+        ao[a.owner].push({ person: displayName(p), action: a.text });
+      });
+    });
+
+    this._renderPrintReport(date, records, ao);
+  },
+
+  _renderPrintReport(date, records, ao) {
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head>
+<title>TOV Ward Council — ${fmtDate(date)}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Georgia',serif;font-size:13px;color:#111;padding:32px 40px;max-width:760px;margin:0 auto;}
+  h1{font-size:22px;font-weight:700;margin-bottom:2px;}
+  .sub{font-size:12px;color:#666;margin-bottom:28px;}
+  .person{border:1px solid #ddd;border-radius:6px;margin-bottom:18px;overflow:hidden;page-break-inside:avoid;}
+  .person-head{background:#0c3a6b;color:#fff;padding:10px 14px;display:flex;align-items:baseline;gap:10px;}
+  .person-name{font-size:15px;font-weight:700;}
+  .person-meta{font-size:11px;color:rgba(255,255,255,.7);}
+  .person-body{padding:12px 14px;}
+  .section{margin-bottom:10px;}
+  .section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:5px;}
+  .note{font-size:13px;padding:4px 0;border-bottom:1px solid #f0f0f0;}
+  .note:last-child{border-bottom:none;}
+  .note-by{font-size:10px;color:#999;margin-top:1px;}
+  .action{padding:5px 0;border-bottom:1px solid #f0f0f0;display:flex;gap:8px;align-items:baseline;}
+  .action:last-child{border-bottom:none;}
+  .action-text{flex:1;}
+  .action-owner{font-size:11px;color:#666;white-space:nowrap;}
+  .action-done{text-decoration:line-through;color:#999;}
+  .action-note{font-size:11px;color:#666;padding:2px 0 2px 12px;font-style:italic;}
+  .summary{margin-top:28px;border-top:2px solid #0c3a6b;padding-top:16px;}
+  .summary h2{font-size:14px;font-weight:700;margin-bottom:12px;color:#0c3a6b;}
+  .owner-block{margin-bottom:12px;}
+  .owner-name{font-size:12px;font-weight:700;color:#333;margin-bottom:4px;}
+  .owner-item{font-size:12px;padding:3px 0;border-bottom:1px solid #f0f0f0;display:flex;gap:8px;}
+  .owner-item:last-child{border-bottom:none;}
+  .owner-person{font-weight:600;min-width:140px;}
+  .empty{color:#999;font-style:italic;font-size:12px;}
+  @media print{body{padding:16px 20px;}}
+</style></head><body>
+<h1>TOV Ward Council</h1>
+<div class="sub">${fmtDate(date)} &nbsp;·&nbsp; ${records.length} individual${records.length!==1?'s':''} discussed</div>
+
+${records.map(r => `
+<div class="person">
+  <div class="person-head">
+    <span class="person-name">${esc(r.name)}</span>
+    <span class="person-meta">${[r.org, r.focus, r.bishopricSupport ? 'Bishopric: ' + esc(r.bishopricSupport.replace(/^[^—]+—\s*/,'').trim() || r.bishopricSupport) : ''].filter(Boolean).join(' · ')}</span>
+  </div>
+  <div class="person-body">
+    ${r.notes.length ? `<div class="section">
+      <div class="section-label">Discussion notes</div>
+      ${r.notes.map(n=>`<div class="note">${esc(n.text)}<div class="note-by">${esc(n.author)}</div></div>`).join('')}
+    </div>` : ''}
+    ${r.openActions.length ? `<div class="section">
+      <div class="section-label">Open actions</div>
+      ${r.openActions.map(a=>`
+        <div class="action"><span class="action-text">${esc(a.text)}</span><span class="action-owner">${esc(a.owner)}</span></div>
+        ${(a.notes||[]).map(n=>`<div class="action-note">${esc(n.text)} — ${esc(n.author)}</div>`).join('')}
+      `).join('')}
+    </div>` : ''}
+    ${r.closedToday.length ? `<div class="section">
+      <div class="section-label">Completed today</div>
+      ${r.closedToday.map(a=>`
+        <div class="action"><span class="action-text action-done">${esc(a.text)}</span><span class="action-owner">${esc(a.owner)}</span></div>
+        ${a.closedNote?`<div class="action-note">${esc(a.closedNote)}</div>`:''}
+      `).join('')}
+    </div>` : ''}
+    ${!r.notes.length && !r.openActions.length && !r.closedToday.length ? `<div class="empty">No notes or actions recorded</div>` : ''}
+  </div>
+</div>`).join('')}
+
+${Object.keys(ao).length ? `<div class="summary">
+  <h2>Open Actions by Owner</h2>
+  ${Object.keys(ao).sort().map(owner=>`
+    <div class="owner-block">
+      <div class="owner-name">${esc(owner)}</div>
+      ${ao[owner].map(a=>`<div class="owner-item"><span class="owner-person">${esc(a.person)}</span><span>${esc(a.action)}</span></div>`).join('')}
+    </div>`).join('')}
+</div>` : ''}
+
+</body></html>`);
+    win.document.close();
+    setTimeout(() => win.print(), 400);
+  },
+
   _toggleMtgArchive(id) {
     const body = document.getElementById(id);
     const idx = id.replace('ma-','');
@@ -2230,32 +2357,19 @@ const UI = {
   },
 
   _printMeeting(id) {
-    const body = document.getElementById(id);
-    if (!body) return;
     const idx = id.replace('ma-','');
     const m = (state.meetingArchive || [])[parseInt(idx)];
     if (!m) return;
-    const win = window.open('','_blank');
-    win.document.write(`<!DOCTYPE html><html><head><title>Ward Council — ${fmtDate(m.date)}</title>
-    <style>body{font-family:sans-serif;padding:32px;color:#111;}h1{font-size:18px;margin-bottom:4px;}
-    h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#666;margin:20px 0 6px;}
-    .row{padding:5px 0;border-bottom:1px solid #eee;display:flex;gap:12px;font-size:13px;}
-    .who{font-weight:600;min-width:160px;}.meta{color:#666;}.owner-group{margin-bottom:10px;}
-    .owner-name{font-weight:600;font-size:12px;color:#444;margin-bottom:3px;}</style></head><body>
-    <h1>TOV Ward Council — ${fmtDate(m.date)}</h1>
-    <div style="font-size:12px;color:#888;">Saved ${fmtDate(m.savedAt?.slice(0,10))}</div>
-    <h2>Discussed (${m.discussed.length})</h2>
-    ${m.discussed.map(d=>`<div class="row"><span class="who">${esc(d.name)}</span><span class="meta">${esc(d.org)}${d.focus?' · '+esc(d.focus):''}</span></div>`).join('')}
-    ${m.openActions.length > 0 ? `<h2>Open Actions by Owner</h2>${(() => {
-      const ao = {}; m.openActions.forEach(a=>{if(!ao[a.owner])ao[a.owner]=[];ao[a.owner].push(a);});
-      return Object.keys(ao).sort().map(o=>`<div class="owner-group"><div class="owner-name">${esc(o)}</div>${ao[o].map(a=>`<div class="row"><span class="who">${esc(a.person)}</span><span class="meta">${esc(a.action)}</span></div>`).join('')}</div>`).join('');
-    })()}` : ''}
-    </body></html>`);
-    win.document.close();
-    win.print();
+    const records = m.peopleRecords || m.discussed.map(d => ({
+      name: d.name, org: d.org, focus: d.focus, bishopricSupport: '', notes: [], openActions: [], closedToday: []
+    }));
+    const ao = {};
+    m.openActions.forEach(a => { if (!ao[a.owner]) ao[a.owner] = []; ao[a.owner].push({ person: a.person, action: a.action||a.text }); });
+    this._renderPrintReport(m.date, records, ao);
   },
 
 
+  openSync() { Sync.renderPanel(); document.getElementById('modal-sync').style.display = 'flex'; },
   closeSync() { document.getElementById('modal-sync').style.display = 'none'; },
 
   // ─── Helpers ─────────────────────────────────────
@@ -2447,12 +2561,36 @@ const App = {
         openActions.push({ person: displayName(p), action: a.text, owner: a.owner });
       });
     });
+
+    // Rich per-person records for the print report
+    const peopleRecords = discussed.map(p => {
+      const org = orgById(p.orgId);
+      const focus = focusById(p.focusId);
+      const todayNotes = (p.history || []).filter(h =>
+        !h.actionId && h.at && h.at.slice(0,10) === state.meetingDate
+      );
+      const openActs = (p.actions || []).filter(a => a.open);
+      const closedToday = (p.actions || []).filter(a =>
+        !a.open && a.closedAt && a.closedAt.slice(0,10) === state.meetingDate
+      );
+      return {
+        name: displayName(p),
+        org: org?.label || '',
+        focus: focus?.label || '',
+        bishopricSupport: p.bishopricSupport || '',
+        notes: todayNotes.map(n => ({ text: n.text, author: n.author })),
+        openActions: openActs.map(a => ({ text: a.text, owner: a.owner, notes: a.notes || [] })),
+        closedToday: closedToday.map(a => ({ text: a.text, owner: a.owner, closedNote: a.closedNote || '', notes: a.notes || [] })),
+      };
+    });
+
     if (!state.meetingArchive) state.meetingArchive = [];
     state.meetingArchive.unshift({
       id: 'm' + Date.now(),
       date: state.meetingDate,
       discussed: discussed.map(p => ({ name: displayName(p), org: orgById(p.orgId)?.label || '', focus: focusById(p.focusId)?.label || '' })),
       openActions,
+      peopleRecords,
       savedAt: new Date().toISOString(),
     });
 
@@ -2789,94 +2927,151 @@ const Sync = {
 // ══════════════════════════════════════════════════════
 
 const APPS_SCRIPT_SOURCE = `/**
- * Council Together — Google Apps Script backend (v8)
- * Stores entire app state as chunked JSON in PropertiesService.
+ * Ward Org Chart — Google Apps Script cloud sync backend (v8)
+ *
+ * Deploy: Extensions → Apps Script → paste → Deploy → New deployment
+ *   - Type: Web app,  Execute as: Me,  Who has access: Anyone
+ * After ANY change: Deploy → Manage deployments → edit → New version → Deploy.
+ *
+ * v8 fixes:
+ *   - Chunk size reduced from 9000 → 4000 chars. PropertiesService silently
+ *     inserts line breaks (\r\n) into values longer than ~8000 chars, causing
+ *     write-verify failures. Staying well under that threshold prevents it.
+ *   - assembleData() strips any \r or \n from each chunk value on read, as a
+ *     belt-and-suspenders guard against any future whitespace insertion.
+ *   - Data is raw JSON (no LZString compression), so only printable ASCII +
+ *     standard JSON chars — no binary or surrogate issues.
  */
-const CHUNK = 4000;
-const KEY_META   = 'data_meta';
-const KEY_PREFIX = 'data_';
-const KEY_BK_META= 'backup_meta';
-const KEY_BK_PFX = 'backup_';
+
+var CHUNK = 4000;  // chars per property (well under the ~8KB corruption threshold)
 
 function doGet(e) {
-  return respond_(function() {
-    const action = (e.parameter && e.parameter.action) || 'load';
-    if (action === 'status')      return { status:'alive', version:8 };
-    if (action === 'loadbackup')  return loadBackup_();
-    return { data: readBlob_(KEY_META, KEY_PREFIX) };
-  });
+  var p = (e && e.parameter) || {};
+  try {
+    if (p.action === 'load')        return handleLoad();
+    if (p.action === 'loadbackup')  return handleLoadBackup();
+    if (p.action === 'status')      return json({ ok: true, status: 'alive', version: 8 });
+    return json({ ok: false, error: 'Unknown GET action: ' + p.action });
+  } catch (err) { return json({ ok: false, error: String(err) }); }
 }
 
 function doPost(e) {
-  return respond_(function() {
-    const body   = JSON.parse(e.postData.contents);
-    const action = body.action || 'save';
-    const lock   = LockService.getScriptLock();
-    lock.waitLock(15000);
-    try {
-      if (action === 'save')       return saveBlob_(body.data, KEY_META, KEY_PREFIX);
-      if (action === 'backup')     return saveBlob_(body.data, KEY_BK_META, KEY_BK_PFX, true);
-      if (action === 'loadbackup') return loadBackup_();
-      throw new Error('Unknown action: ' + action);
-    } finally { lock.releaseLock(); }
-  });
-}
-
-function respond_(fn) {
   try {
-    const r = fn();
-    return ContentService
-      .createTextOutput(JSON.stringify(Object.assign({ ok:true }, r)))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch(err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok:false, error:String(err&&err.message||err) }))
-      .setMimeType(ContentService.MimeType.JSON);
+    var body = (e && e.postData && e.postData.contents)
+      ? JSON.parse(e.postData.contents) : {};
+    if (body.action === 'save')   return handleSave(body);
+    if (body.action === 'backup') return handleBackup(body);
+    return json({ ok: false, error: 'Unknown POST action: ' + body.action });
+  } catch (err) { return json({ ok: false, error: String(err) }); }
+}
+
+function handleSave(body) {
+  var data = String(body.data || '');
+  if (!data) return json({ ok: false, error: 'No data in request body' });
+
+  var props = PropertiesService.getScriptProperties();
+
+  // Remove any previous payload chunks.
+  clearDataChunks(props);
+
+  // Split into property-sized chunks and store them.
+  var n = 0;
+  for (var i = 0; i < data.length; i += CHUNK) {
+    props.setProperty('data_' + n, data.slice(i, i + CHUNK));
+    n++;
   }
+  props.setProperty('data_meta', JSON.stringify({
+    chunks: n,
+    length: data.length,
+    savedAt: Date.now()
+  }));
+
+  // WRITE-VERIFY: read everything straight back and compare.
+  var readback = assembleData(props);
+  if (readback !== data) {
+    var at = -1;
+    for (var k = 0; k < Math.max(readback.length, data.length); k++) {
+      if (readback.charAt(k) !== data.charAt(k)) { at = k; break; }
+    }
+    return json({
+      ok: false,
+      error: 'Storage verify failed: sent ' + data.length +
+             ' chars, read back ' + readback.length +
+             ' chars, first diff at index ' + at
+    });
+  }
+
+  return json({ ok: true, length: data.length, chunks: n, verified: true });
 }
 
-function saveBlob_(data, metaKey, prefix, isBackup) {
-  if (!data) throw new Error('No data');
-  const str    = typeof data === 'string' ? data : JSON.stringify(data);
-  const props  = PropertiesService.getScriptProperties();
-  const count  = Math.ceil(str.length / CHUNK);
-  const oldMeta= JSON.parse(props.getProperty(metaKey)||'{}');
-  for (var i = (oldMeta.chunks||0)-1; i >= count; i--) props.deleteProperty(prefix+i);
-  for (var i = 0; i < count; i++)
-    props.setProperty(prefix+i, str.slice(i*CHUNK, (i+1)*CHUNK));
-  const savedAt= new Date().toISOString();
-  props.setProperty(metaKey, JSON.stringify({chunks:count,length:str.length,savedAt}));
-  const verify = assembleData_(props, prefix, count);
-  if (verify !== str) throw new Error('Verify failed at char '+findDiff_(str,verify));
-  return { chunks:count, length:str.length, verified:true,
-    stamp: isBackup ? savedAt : undefined };
+function handleLoad() {
+  var props = PropertiesService.getScriptProperties();
+  var metaRaw = props.getProperty('data_meta');
+  if (!metaRaw) return json({ ok: true, compressed: '', empty: true });
+  var assembled = assembleData(props);
+  if (!assembled) return json({ ok: true, compressed: '', empty: true });
+  if (assembled.charAt(0) === '{') return json({ ok: true, data: assembled });
+  return json({ ok: true, compressed: assembled, length: assembled.length });
 }
 
-function readBlob_(metaKey, prefix) {
-  const props = PropertiesService.getScriptProperties();
-  const meta  = JSON.parse(props.getProperty(metaKey)||'{}');
-  if (!meta.chunks) return null;
-  return assembleData_(props, prefix, meta.chunks);
+function handleBackup(body) {
+  var data = String(body.data || '');
+  if (!data) return json({ ok: false, error: 'No data in request body' });
+  var props = PropertiesService.getScriptProperties();
+  var stamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'M/d/yyyy, HH:mm:ss');
+  var oldKeys = props.getProperties();
+  for (var k in oldKeys) { if (k.indexOf('backup_') === 0) props.deleteProperty(k); }
+  var n = 0;
+  for (var i = 0; i < data.length; i += CHUNK) {
+    props.setProperty('backup_' + n, data.slice(i, i + CHUNK));
+    n++;
+  }
+  props.setProperty('backup_meta', JSON.stringify({ chunks: n, length: data.length, stamp: stamp }));
+  return json({ ok: true, stamp: stamp, length: data.length });
 }
 
-function assembleData_(props, prefix, count) {
+function handleLoadBackup() {
+  var props = PropertiesService.getScriptProperties();
+  var metaRaw = props.getProperty('backup_meta');
+  if (!metaRaw) return json({ ok: true, empty: true });
+  var meta;
+  try { meta = JSON.parse(metaRaw); } catch (e) { return json({ ok: false, error: 'Corrupted backup metadata' }); }
   var out = '';
-  for (var i = 0; i < count; i++)
-    out += (props.getProperty(prefix+i)||'').replace(/[\\r\\n]/g,'');
+  for (var i = 0; i < meta.chunks; i++) {
+    var c = props.getProperty('backup_' + i);
+    if (c === null || c === undefined) return json({ ok: false, error: 'Missing backup chunk ' + i });
+    out += c.replace(/[\r\n]/g, '');
+  }
+  return json({ ok: true, data: out, stamp: meta.stamp || 'unknown', length: out.length });
+}
+
+function assembleData(props) {
+  var metaRaw = props.getProperty('data_meta');
+  if (!metaRaw) return '';
+  var meta;
+  try { meta = JSON.parse(metaRaw); } catch (e) { return ''; }
+  var out = '';
+  for (var i = 0; i < meta.chunks; i++) {
+    var c = props.getProperty('data_' + i);
+    if (c === null || c === undefined) return out;
+    out += c.replace(/[\r\n]/g, '');
+  }
   return out;
 }
 
-function loadBackup_() {
-  const data = readBlob_(KEY_BK_META, KEY_BK_PFX);
-  if (!data) return { empty:true };
-  const meta = JSON.parse(PropertiesService.getScriptProperties().getProperty(KEY_BK_META)||'{}');
-  return { data, stamp: meta.savedAt||'' };
+function clearDataChunks(props) {
+  var all = props.getProperties();
+  for (var key in all) {
+    if (key === 'data_meta' || key.indexOf('data_') === 0) {
+      props.deleteProperty(key);
+    }
+  }
 }
 
-function findDiff_(a, b) {
-  for (var i = 0; i < Math.max(a.length, b.length); i++)
-    if (a[i] !== b[i]) return i;
-  return -1;
+function json(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
 }`;
 
 // ══════════════════════════════════════════════════════
