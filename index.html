@@ -1,0 +1,2919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TOV Work of Salvation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Design tokens ── */
+:root {
+  --navy:       #0c3a6b;
+  --navy-2:     #082d54;
+  --accent:     #1473b5;
+  --accent-2:   #0d5d99;
+  --accent-soft:rgba(20,115,181,0.10);
+  --sky:        #e8f3fb;
+  --bg:         #f5f7fa;
+  --surface:    #ffffff;
+  --surface-2:  #edf2f7;
+  --warm:       #f0f5fb;
+  --ink:        #0d1f33;
+  --ink-2:      #2d4a6a;
+  --ink-3:      #6a8aaa;
+  --ink-4:      #aac0d4;
+  --line:       rgba(12,58,107,0.09);
+  --line-2:     rgba(12,58,107,0.16);
+  --green:      #4db88a;
+  --green-soft: rgba(77,184,138,0.12);
+  --amber:      #e8a050;
+  --amber-soft: rgba(232,160,80,0.12);
+  --red-soft:   rgba(176,48,48,0.08);
+  --r:          10px;
+  --r-lg:       13px;
+  --sh-sm:      0 1px 3px rgba(12,58,107,0.08);
+  --sh-md:      0 4px 16px rgba(12,58,107,0.12);
+  --sh-lg:      0 20px 50px rgba(12,58,107,0.20), 0 4px 12px rgba(12,58,107,0.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-family:'Inter',system-ui,sans-serif;font-size:clamp(12px,1.1vw,16px);
+  background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+button,input,select,textarea{font-family:inherit;font-size:inherit;}
+button{cursor:pointer;}
+
+/* ── App shell ── */
+#app{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+
+/* ── Topbar ── */
+.topbar{
+  height:3.25rem;display:flex;align-items:center;gap:10px;padding:0 16px;
+  background:var(--navy);border-bottom:2px solid var(--accent);flex-shrink:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-right:4px;}
+.brand::before{content:'';width:3px;height:18px;background:var(--accent);border-radius:2px;}
+.brand-mark{width:28px;height:28px;border-radius:6px;background:var(--accent);
+  display:grid;place-items:center;color:#fff;font-weight:700;font-size:11px;letter-spacing:.04em;}
+.brand-name{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#fff;}
+.tb-sep{width:1px;height:20px;background:rgba(255,255,255,0.15);flex-shrink:0;}
+.tb-meeting{display:flex;align-items:center;gap:8px;padding:4px 12px;
+  border:1px solid rgba(255,255,255,0.20);border-radius:6px;
+  background:rgba(255,255,255,0.08);font-size:12px;color:rgba(255,255,255,0.80);flex-shrink:0;}
+.tb-dot{width:6px;height:6px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 0 3px rgba(77,184,138,0.25);}
+.tb-meeting input[type=date]{border:none;background:transparent;color:rgba(255,255,255,0.85);
+  font-size:12px;font-family:inherit;outline:none;width:120px;}
+.tb-meeting input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1) opacity(.5);}
+.tb-user{height:30px;padding:0 10px;background:rgba(255,255,255,0.10);
+  border:1px solid rgba(255,255,255,0.20);border-radius:6px;color:#fff;
+  font-size:12px;width:160px;outline:none;}
+.tb-user::placeholder{color:rgba(255,255,255,0.40);}
+.ml-auto{margin-left:auto;}
+.tb-btn{height:30px;padding:0 10px;background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.18);border-radius:6px;color:rgba(255,255,255,0.85);
+  font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:5px;
+  white-space:nowrap;transition:background .12s;}
+.tb-btn:hover{background:rgba(255,255,255,0.16);color:#fff;}
+.tb-btn.primary{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.35);font-weight:600;}
+.tb-btn.primary:hover{background:rgba(255,255,255,0.22);}
+.sync-pill{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 10px;
+  border:1px solid rgba(255,255,255,0.18);border-radius:6px;
+  background:rgba(255,255,255,0.08);font-size:12px;color:rgba(255,255,255,0.80);cursor:pointer;}
+.sync-pill .dot{width:7px;height:7px;border-radius:50%;}
+.sync-pill.online .dot{background:var(--green);box-shadow:0 0 0 3px rgba(77,184,138,0.25);}
+.sync-pill.offline .dot{background:var(--amber);}
+.sync-pill.syncing .dot{background:#7ab8e8;animation:pulse 1.2s infinite;}
+.sync-pill.unconfigured .dot{background:rgba(255,255,255,0.25);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── Nav tabs ── */
+.navtabs{display:flex;align-items:center;gap:2px;padding:0 16px;
+  background:var(--surface);border-bottom:1px solid var(--line);flex-shrink:0;height:2.5rem;}
+.navtab{height:32px;padding:0 14px;border-radius:6px;border:none;
+  background:transparent;font-size:13px;font-weight:500;color:var(--ink-3);
+  cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .12s;}
+.navtab:hover{background:var(--surface-2);color:var(--ink-2);}
+.navtab.active{background:var(--sky);color:var(--navy);font-weight:600;}
+.navtab .badge{font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;
+  background:var(--accent);color:#fff;min-width:18px;text-align:center;}
+.navtab.active .badge{background:var(--navy);}
+.navtab .badge.muted{background:var(--ink-3);}
+
+/* ── Views ── */
+.view{display:none;flex:1;overflow:hidden;flex-direction:column;}
+.view.active{display:flex;}
+
+/* ── Shared buttons ── */
+.btn{height:30px;padding:0 12px;border-radius:6px;border:1px solid var(--line-2);
+  background:var(--surface);font-size:12px;font-weight:500;color:var(--ink);
+  display:inline-flex;align-items:center;gap:5px;transition:all .12s;white-space:nowrap;}
+.btn:hover{background:var(--surface-2);}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff;}
+.btn.primary:hover{background:var(--navy-2);}
+.btn.danger{color:#b03030;border-color:rgba(176,48,48,0.25);}
+.btn.danger:hover{background:var(--red-soft);}
+.btn.green{background:var(--green);border-color:var(--green);color:#fff;}
+.btn.green:hover{background:#3da878;}
+.btn.sm{height:26px;padding:0 9px;font-size:11.5px;border-radius:5px;}
+.btn.xs{height:22px;padding:0 7px;font-size:11px;border-radius:4px;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+.icon-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--line-2);
+  background:transparent;color:var(--ink-3);display:grid;place-items:center;font-size:15px;}
+.icon-btn:hover{background:var(--surface-2);color:var(--ink);}
+
+/* ── Queue view ── */
+.queue-head{padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.queue-head h2{font-size:15px;font-weight:700;letter-spacing:-.01em;}
+.queue-head .meta{font-size:12px;color:var(--ink-3);}
+.queue-scroll{flex:1;overflow-y:auto;padding:6px 12px 40px;}
+/* inside split panel, queue uses split-scroll class */
+.split-queue .split-scroll .pcard{margin-bottom:5px;}
+.section-header{padding:10px 4px 5px;display:flex;align-items:center;gap:10px;}
+.section-header .label{font-size:12px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--ink-3);}
+.section-header .count{font-size:10px;color:var(--ink-4);
+  background:var(--surface-2);border:1px solid var(--line);
+  border-radius:99px;padding:1px 7px;font-weight:600;}
+.section-sep{flex:1;height:1px;background:var(--line);}
+.queue-empty{padding:32px;text-align:center;color:var(--ink-3);font-size:13px;
+  font-style:italic;border:1px dashed var(--line-2);border-radius:var(--r);margin:8px 4px;}
+
+/* ── Person card ── */
+.pcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  border-left:3px solid var(--accent);cursor:pointer;
+  transition:box-shadow .12s,border-color .12s,background .12s;
+  margin-bottom:5px;overflow:hidden;}
+.pcard:hover{box-shadow:var(--sh-sm);border-color:var(--line-2);background:var(--warm);}
+.pcard.discussed{border-left-color:var(--green);}
+.pcard.stale{border-left-color:var(--amber);}
+.pcard-main{padding:9px 11px;display:flex;align-items:center;gap:10px;}
+.pcard-avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+  font-size:12px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:.02em;}
+.pcard-info{flex:1;min-width:0;}
+.pcard-name{font-weight:700;font-size:15px;letter-spacing:-.01em;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pcard-sub{font-size:11.5px;color:var(--ink-3);margin-top:2px;
+  display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.pcard-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+.org-tag{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  padding:2px 6px;border-radius:4px;background:var(--surface-2);color:var(--ink-3);
+  border:1px solid var(--line);white-space:nowrap;}
+.discussed-stamp{font-size:10px;color:var(--green);font-weight:600;
+  display:flex;align-items:center;gap:3px;}
+.stale-stamp{font-size:10px;color:var(--amber);font-weight:600;}
+.last-seen{font-size:10px;color:var(--ink-4);}
+.added-flag{font-size:10px;color:var(--accent);font-weight:500;
+  background:rgba(20,115,181,0.08);border:1px solid rgba(20,115,181,0.18);
+  border-radius:99px;padding:1px 7px;white-space:nowrap;}
+
+/* ── Inline action rows on card ── */
+.pcard-actions{padding:0 11px 8px 55px;display:flex;flex-direction:column;gap:3px;}
+.action-row{display:flex;align-items:flex-start;gap:7px;padding:5px 8px;
+  background:var(--warm);border:1px solid var(--line);border-radius:5px;font-size:12px;}
+.action-row.done{background:var(--surface-2);opacity:.65;}
+.action-check{width:15px;height:15px;border-radius:3px;border:1.5px solid var(--line-2);
+  background:var(--surface);flex-shrink:0;margin-top:1px;cursor:pointer;
+  display:grid;place-items:center;transition:all .12s;}
+.action-check:hover{border-color:var(--accent);background:var(--accent-soft);}
+.action-check.checked{background:var(--accent);border-color:var(--accent);}
+.action-check.checked::after{content:'✓';font-size:9px;color:#fff;font-weight:700;}
+.action-text{flex:1;line-height:1.35;color:var(--ink);}
+.action-row.done .action-text{text-decoration:line-through;color:var(--ink-3);}
+.action-owner-tag{font-size:10.5px;color:var(--ink-3);display:flex;align-items:center;gap:3px;flex-shrink:0;}
+.mini-av{width:16px;height:16px;border-radius:50%;display:grid;place-items:center;
+  font-size:7px;font-weight:700;color:#fff;flex-shrink:0;}
+/* discuss-btn removed — stamp is automatic */
+
+/* ── Compact roster cards inside split panel ── */
+.split-roster .pcard{margin-bottom:4px;}
+.split-roster .pcard-main{padding:7px 10px;gap:8px;}
+.split-roster .pcard-avatar{width:30px;height:30px;font-size:11px;}
+.split-roster .pcard-name{font-size:13.5px;}
+.split-roster .pcard-sub{font-size:11px;gap:5px;}
+
+/* ── Queue toggle (roster) ── */
+.queue-toggle{width:28px;height:28px;border-radius:6px;border:1.5px solid var(--line-2);
+  background:var(--surface);display:grid;place-items:center;cursor:pointer;
+  font-size:13px;font-weight:600;color:var(--ink-3);transition:all .12s;flex-shrink:0;}
+.queue-toggle:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+.queue-toggle.to-queue{}
+.queue-toggle.to-roster{border-color:var(--line-2);background:var(--surface);color:var(--ink-3);}
+.queue-toggle.to-roster:hover{border-color:var(--ink-2);background:var(--surface-2);color:var(--ink);}
+.queue-toggle.locked{opacity:0.30;cursor:not-allowed;background:transparent;border-color:var(--line);color:var(--ink-4);}
+.queue-toggle.locked:hover{border-color:var(--line);background:transparent;color:var(--ink-4);}
+
+/* ── Split board layout ── */
+.board-split{display:flex;flex:1;overflow:hidden;min-height:0;}
+
+.split-roster{display:flex;flex-direction:column;width:38%;min-width:280px;flex-shrink:0;overflow:hidden;background:var(--surface-2);}
+.split-queue {display:flex;flex-direction:column;flex:1;overflow:hidden;background:var(--bg);}
+.split-divider{width:1px;background:var(--line-2);flex-shrink:0;}
+
+.split-head{padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--line);flex-shrink:0;}
+.split-head-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.split-title{font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-.01em;}
+.split-scroll{overflow-y:auto;padding:8px 10px 40px;flex:1;}
+
+/* ── Roster view ── */
+.roster-head{padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;}
+.chip-row{display:flex;gap:5px;flex-wrap:wrap;}
+.chip{height:26px;padding:0 10px;border-radius:5px;border:1px solid var(--line-2);
+  background:var(--surface-2);font-size:11.5px;color:var(--ink-2);cursor:pointer;
+  font-weight:500;display:inline-flex;align-items:center;gap:5px;transition:all .12s;}
+.chip:hover{background:var(--warm);}
+.chip.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+.chip .cnt{font-size:10px;color:var(--ink-3);}
+.chip.active .cnt{color:rgba(255,255,255,0.60);}
+.search-box{display:flex;align-items:center;gap:7px;padding:0 10px;height:28px;
+  border:1px solid var(--line-2);border-radius:6px;background:var(--surface-2);
+  margin-left:auto;min-width:200px;transition:border-color .12s,background .12s;}
+.search-box:focus-within{background:white;border-color:rgba(12,58,107,.25);}
+.search-box input{border:none;outline:none;background:transparent;
+  font-size:12.5px;width:100%;color:var(--ink);}
+.search-box input::placeholder{color:var(--ink-3);}
+.roster-scroll{padding:8px 12px 40px;overflow-y:auto;flex:1;}
+
+/* ── Archive view ── */
+.archive-view{padding:20px;overflow-y:auto;flex:1;}
+.archive-view h2{font-size:15px;font-weight:700;margin-bottom:4px;}
+.archive-view .sub{font-size:12px;color:var(--ink-3);margin-bottom:16px;}
+.archive-reason{padding:6px 11px;background:#fffbe6;border-top:1px solid rgba(180,130,0,.15);
+  font-size:12px;color:#7a6010;}
+
+/* ── Scrim + modal ── */
+.scrim{position:fixed;inset:0;background:rgba(13,31,51,.50);backdrop-filter:blur(2px);
+  z-index:100;display:none;animation:fadeIn .15s ease;}
+.scrim.open{display:block;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:min(960px,96vw);max-height:92vh;background:var(--surface);
+  border-radius:var(--r-lg);border:1px solid var(--line-2);z-index:101;
+  box-shadow:var(--sh-lg);display:none;flex-direction:column;overflow:hidden;
+  animation:popIn .18s cubic-bezier(.2,.7,.3,1);}
+.modal.open{display:flex;}
+@keyframes popIn{from{transform:translate(-50%,-48%) scale(.97);opacity:0}
+  to{transform:translate(-50%,-50%) scale(1);opacity:1}}
+.modal-head{padding:12px 18px 12px;background:var(--navy);border-bottom:2px solid var(--accent);
+  flex-shrink:0;}
+.modal-name{font-size:2rem;font-weight:700;letter-spacing:-.03em;color:#fff;line-height:1.1;}
+.modal-sub{font-size:1rem;color:rgba(255,255,255,.75);margin-top:0.4rem;}
+.modal-meta{display:flex;align-items:center;gap:8px;margin-top:0.75rem;flex-wrap:nowrap;}
+.modal-close{width:30px;height:30px;border-radius:6px;border:1px solid rgba(255,255,255,.20);
+  background:rgba(255,255,255,.10);color:rgba(255,255,255,.80);cursor:pointer;
+  display:grid;place-items:center;font-size:18px;flex-shrink:0;}
+.modal-close:hover{background:rgba(255,255,255,.22);color:#fff;}
+.modal-head .icon-btn{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.20);
+  color:rgba(255,255,255,.80);width:30px;height:30px;}
+.modal-head .icon-btn:hover{background:rgba(255,255,255,.22);color:#fff;}
+.modal-body{padding:0 22px 8px;flex:1;overflow-y:auto;}
+.modal-section{padding:14px 0;border-bottom:1px solid var(--line);}
+.modal-section:last-child{border-bottom:none;}
+
+.modal-section h4{font-size:10px;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--ink-3);font-weight:700;margin-bottom:10px;flex-shrink:0;}
+.modal-foot{padding:12px 20px;border-top:1px solid var(--line);background:var(--surface-2);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px;}
+
+/* ── Small modal (confirm, end-meeting, etc) ── */
+.modal-sm{width:min(440px,94vw);}
+.modal-sm .modal-body{padding:16px 20px;}
+
+/* ── Status pill ── */
+.spill{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:4px;
+  font-size:11px;font-weight:600;border:1px solid;}
+.spill-open{background:var(--sky);color:#1a5c8a;border-color:rgba(20,115,181,.25);}
+.spill-none{background:var(--surface-2);color:var(--ink-3);border-color:var(--line);}
+
+/* ── Action items in detail modal ── */
+.action-list{display:flex;flex-direction:column;gap:6px;}
+.action-item{border:1px solid var(--line);border-radius:7px;overflow:hidden;
+  transition:border-color .12s;}
+.action-item.open-item{border-color:rgba(20,115,181,.20);background:var(--warm);}
+.action-item.closed-item{background:var(--surface-2);opacity:.7;}
+.action-item-main{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;}
+.action-item-check{width:18px;height:18px;border-radius:4px;border:2px solid var(--line-2);
+  background:var(--surface);flex-shrink:0;margin-top:1px;cursor:pointer;
+  display:grid;place-items:center;transition:all .15s;}
+.action-item-check:hover{border-color:var(--accent);}
+.action-item-check.done{background:var(--accent);border-color:var(--accent);}
+.action-item-check.done::after{content:'✓';font-size:10px;color:#fff;font-weight:700;}
+.action-item-body{flex:1;}
+.action-item-text{font-size:13.5px;color:var(--ink);line-height:1.4;}
+.action-item-text.done{text-decoration:line-through;color:var(--ink-3);}
+.action-item-foot{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap;}
+.action-item-owner{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-3);}
+.action-item-date{font-size:10.5px;color:var(--ink-4);}
+.open-badge{font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;
+  background:rgba(20,115,181,.12);color:var(--accent);margin-left:auto;}
+/* Completion note area — shown after clicking the check */
+.completion-area{display:none;padding:0 11px 9px 38px;}
+.completion-area.show{display:block;}
+.completion-area input{width:100%;border:1px solid var(--line-2);border-radius:5px;
+  padding:6px 9px;font-size:12.5px;background:#fff;outline:none;}
+.completion-area input:focus{border-color:var(--accent);}
+.completion-area .row{display:flex;gap:6px;margin-top:5px;align-items:center;}
+.completion-area .hint{font-size:11px;color:var(--ink-3);flex:1;}
+.add-action-row{display:flex;gap:7px;align-items:center;padding:8px 0 2px;}
+.add-action-row input{flex:1;border:1px solid var(--line-2);border-radius:6px;
+  padding:7px 9px;font-size:13px;background:#fafbfd;outline:none;}
+.add-action-row input:focus{border-color:var(--accent);background:#fff;}
+
+/* ── History / notes ── */
+.history-list{display:flex;flex-direction:column;gap:7px;
+  overflow-y:auto;max-height:320px;padding-right:4px;}
+.h-item{display:flex;gap:10px;padding:8px 10px;background:var(--surface-2);
+  border-radius:7px;border:1px solid var(--line);}
+.h-av{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
+  font-size:9px;font-weight:700;color:#fff;flex-shrink:0;margin-top:1px;}
+.h-body{flex:1;}
+.h-meta{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-3);margin-bottom:2px;}
+.h-delete-btn{margin-left:auto;border:none;background:transparent;color:var(--ink-4);
+  font-size:11px;cursor:pointer;padding:0 2px;line-height:1;border-radius:3px;opacity:0;transition:opacity 0.12s,color 0.12s;}
+.h-item:hover .h-delete-btn,.action-item:hover .h-delete-btn{opacity:1;}
+.h-delete-btn:hover{color:#b03030 !important;}
+.h-meta strong{color:var(--ink);font-weight:600;}
+.h-text{font-size:13px;color:var(--ink);line-height:1.45;white-space:pre-wrap;}
+.h-item.action-close{border-color:rgba(77,184,138,.25);background:rgba(77,184,138,.05);}
+.note-area{width:100%;border:1px solid var(--line-2);border-radius:6px;padding:8px 10px;
+  font-size:13px;background:#fafbfd;resize:vertical;min-height:100px;outline:none;margin-top:8px;}
+.note-area:focus{border-color:var(--accent);background:#fff;}
+
+/* ── Field grid ── */
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;}
+.field{display:flex;flex-direction:column;gap:3px;}
+.field label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--ink-3);font-weight:700;}
+.modal-section .field input:hover,.modal-section .field select:hover{border-bottom-color:var(--line-2) !important;}
+.field .val{font-size:13.5px;color:var(--ink);}
+.field .val.empty{color:var(--ink-3);font-style:italic;}
+.field input,.field select,.field textarea{border:1px solid var(--line-2);border-radius:6px;
+  padding:7px 9px;font-size:13px;background:#fafbfd;outline:none;width:100%;}
+.field input:focus,.field select:focus,.field textarea:focus{
+  border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px var(--accent-soft);}
+.field textarea{min-height:54px;resize:vertical;}
+
+/* ── End meeting modal ── */
+.report-section{margin-bottom:18px;}
+.report-section h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--navy);font-weight:700;border-bottom:1px solid var(--line);
+  padding-bottom:5px;margin-bottom:8px;}
+.report-row{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid var(--line);
+  font-size:13px;align-items:baseline;}
+.report-row:last-child{border-bottom:none;}
+.report-who{font-weight:600;width:160px;flex-shrink:0;color:var(--ink);}
+.report-action{flex:1;color:var(--ink);}
+.report-owner{font-size:12px;color:var(--ink-3);width:130px;text-align:right;flex-shrink:0;}
+
+/* ── Sync panel ── */
+.sync-modal .modal-body{padding:16px 20px;}
+.sync-status-row{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border-radius:9px;background:var(--surface-2);border:1px solid var(--line);margin-bottom:14px;}
+.sync-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;
+  font-size:13px;font-weight:500;box-shadow:var(--sh-md);z-index:9999;
+  animation:toastIn .2s ease;pointer-events:none;}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}
+  to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* ── Focus tag ── */
+.focus-tag{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+  padding:2px 6px;border-radius:4px;white-space:nowrap;}
+.focus-living  {background:rgba(77,184,138,.13);color:#1a6644;border:1px solid rgba(77,184,138,.30);}
+.focus-caring  {background:rgba(232,160,80,.13); color:#7a4010;border:1px solid rgba(232,160,80,.30);}
+.focus-inviting{background:rgba(20,115,181,.12); color:#0d4f8a;border:1px solid rgba(20,115,181,.28);}
+.focus-uniting {background:rgba(140,80,180,.12); color:#5a1f8a;border:1px solid rgba(140,80,180,.28);}
+
+/* ── Action notes thread ── */
+.action-notes{margin:6px 0 0 0;border-left:2px solid var(--line-2);padding-left:8px;}
+.action-note{font-size:11.5px;color:var(--ink-2);padding:3px 0;line-height:1.4;}
+.action-note .an-meta{font-size:10px;color:var(--ink-4);margin-top:1px;}
+.action-note-input{display:none;margin-top:6px;gap:5px;align-items:center;}
+.action-note-input.open{display:flex;}
+.action-note-input input{flex:1;font-size:12px;padding:4px 8px;border:1px solid var(--line-2);border-radius:5px;background:var(--surface);}
+.action-note-input input:focus{border-color:var(--accent);outline:none;}
+.action-footer{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap;}
+.action-footer .note-toggle{font-size:11px;color:var(--ink-3);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--line);}
+.action-footer .note-toggle:hover{border-color:var(--accent);color:var(--accent);}
+.completion-area{margin-top:6px;display:none;}
+.completion-area.show{display:block;}
+.completion-area input{width:100%;font-size:12px;padding:5px 8px;border:1px solid var(--line-2);border-radius:5px;margin-bottom:5px;}
+.completion-area input:focus{border-color:var(--accent);outline:none;}
+.completion-area .row{display:flex;gap:6px;justify-content:flex-end;}
+
+/* ── Owner typeahead ── */
+.owner-wrap{position:relative;width:220px;flex-shrink:0;}
+.owner-wrap input{width:100%;}
+.owner-suggestions{position:absolute;top:calc(100% + 3px);left:0;right:0;
+  background:var(--surface);border:1px solid var(--line-2);border-radius:7px;
+  box-shadow:var(--sh-md);z-index:50;overflow:hidden;display:none;}
+.owner-suggestions.open{display:block;}
+.owner-suggestion{padding:7px 10px;font-size:12.5px;cursor:pointer;
+  display:flex;align-items:center;gap:8px;color:var(--ink);}
+.owner-suggestion:hover,.owner-suggestion.focused{background:var(--sky);}
+.owner-suggestion .sug-role{font-size:10.5px;color:var(--ink-3);margin-left:auto;white-space:nowrap;}
+.owner-suggestion .sug-av{width:20px;height:20px;border-radius:50%;
+  display:grid;place-items:center;font-size:8px;font-weight:700;color:#fff;flex-shrink:0;}
+
+/* ── Mobile ── */
+@media(max-width:700px){
+  html,body{font-size:14px;}
+
+  /* Topbar — collapse to essentials */
+  .topbar{padding:0 12px;gap:8px;height:3rem;}
+  .tb-sep,.tb-meeting,.tb-user,.sync-pill{display:none!important;}
+  .brand-name{font-size:12px;}
+  .tb-btn{font-size:11px;padding:4px 8px;}
+  .navtabs{display:none;}
+
+  /* Board: stack panels, show one at a time */
+  .board-split{flex-direction:column;}
+  .split-roster{width:100%!important;min-width:0!important;height:auto;border-right:none;border-bottom:1px solid var(--line);}
+  .split-queue{width:100%!important;}
+
+  /* Panel visibility toggled by JS */
+  .split-roster.mob-hidden{display:none!important;}
+  .split-queue.mob-hidden{display:none!important;}
+
+  /* Bottom tab bar */
+  .mob-tabs{display:flex!important;}
+
+  /* Cards — more breathing room for thumbs */
+  .pcard-main{padding:10px 12px!important;}
+  .pcard-name{font-size:14px!important;}
+  .pcard-sub{gap:5px!important;}
+  .split-head{padding:10px 12px 8px!important;}
+
+  /* Roster split-scroll — constrain height so it scrolls */
+  .split-roster .split-scroll{max-height:calc(100vh - 10rem);overflow-y:auto;}
+
+  /* Queue scroll fills remaining space */
+  .split-queue .split-scroll{flex:1;overflow-y:auto;}
+
+  /* Modals — full screen on mobile */
+  .modal{
+    position:fixed!important;
+    top:0!important;left:0!important;right:0!important;bottom:0!important;
+    transform:none!important;
+    width:100%!important;max-width:100%!important;
+    max-height:100%!important;
+    border-radius:0!important;
+  }
+
+  /* Detail modal on mobile — hide desktop-heavy sections */
+  #d-covenant-wrap{display:none!important;}
+  .detail-history-section{display:none!important;}
+  .modal-head{padding:14px 44px 14px 16px!important;}
+  #d-name{font-size:1.4rem!important;}
+  #d-sub{font-size:0.85rem!important;}
+  #d-meta{flex-wrap:wrap!important;}
+
+  /* Stewardship grid — single column on mobile */
+  .field-grid{grid-template-columns:1fr!important;}
+  .stewardship-section .field-grid{grid-template-columns:1fr 1fr!important;}
+
+
+
+  /* Owner avatar only on queue cards */
+  .pcard-owner-name{display:none;}
+
+  /* Add button — make prominent on mobile */
+  .mob-add-fab{display:flex!important;}
+}
+
+/* Hidden by default, shown on mobile */
+.mob-tabs{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  height:3.5rem;
+  background:var(--navy);
+  border-top:2px solid var(--accent);
+  z-index:90;
+}
+.mob-tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;color:rgba(255,255,255,.55);font-size:10px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.04em;border:none;background:none;cursor:pointer;
+  transition:color .15s;
+}
+.mob-tab.active{color:#fff;}
+.mob-tab .mob-tab-icon{font-size:18px;line-height:1;}
+.mob-tab .mob-tab-badge{
+  background:var(--accent);color:#fff;font-size:9px;font-weight:700;
+  padding:1px 5px;border-radius:10px;min-width:16px;text-align:center;
+  position:absolute;top:6px;margin-left:14px;
+}
+
+.mob-add-fab{
+  display:none;
+  position:fixed;bottom:4.5rem;right:1rem;
+  width:3rem;height:3rem;border-radius:50%;
+  background:var(--navy-light);color:#fff;
+  font-size:1.5rem;font-weight:300;
+  align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.25);
+  border:none;cursor:pointer;z-index:91;
+}
+
+/* ── Meeting archive ── */
+.mtg-archive-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+.mtg-archive-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none;}
+.mtg-archive-head:hover{background:var(--surface-2);}
+.mtg-archive-date{font-weight:700;font-size:14px;color:var(--ink);}
+.mtg-archive-meta{font-size:12px;color:var(--ink-3);margin-left:auto;display:flex;gap:10px;}
+.mtg-archive-chevron{color:var(--ink-3);font-size:12px;transition:transform .2s;}
+.mtg-archive-chevron.open{transform:rotate(90deg);}
+.mtg-archive-body{display:none;padding:0 14px 14px;border-top:1px solid var(--line-2);}
+.mtg-archive-body.open{display:block;}
+.mtg-archive-section{margin-top:12px;}
+.mtg-archive-section h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);margin-bottom:6px;}
+.mtg-archive-row{font-size:13px;padding:4px 0;border-bottom:1px solid var(--line-2);display:flex;gap:8px;}
+.mtg-archive-row:last-child{border-bottom:none;}
+.mtg-archive-row .mar-who{font-weight:500;min-width:140px;}
+.mtg-archive-row .mar-org{color:var(--ink-3);font-size:12px;}
+.mtg-print-btn{font-size:12px;color:var(--accent);cursor:pointer;padding:2px 8px;border:1px solid var(--line-2);border-radius:5px;background:none;margin-left:auto;}
+.mtg-print-btn:hover{background:var(--sky);}
+
+/* ── Print ── */
+@media print{
+  .topbar,.navtabs,.modal-foot,button{display:none!important;}
+  .modal{position:static;transform:none;width:100%;max-height:none;box-shadow:none;border:none;}
+  .modal.open{display:block;}
+  .scrim{display:none!important;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-name">TOV Work of Salvation</div>
+    </div>
+
+    <input class="tb-user" id="tb-user" placeholder="Your name (for notes)"
+      onchange="App.setCurrentUser(this.value)">
+    <div class="ml-auto" style="display:flex;align-items:center;gap:6px;">
+      <div class="sync-pill unconfigured" id="sync-pill" onclick="UI.openSync()">
+        <div class="dot"></div><span id="sync-pill-text">Connect sheet</span>
+      </div>
+      <button class="tb-btn" onclick="Admin.open()" title="Ward council members">⚙ Council</button>
+      <button class="tb-btn" onclick="UI.openEndMeeting()">End meeting</button>
+    </div>
+  </div>
+
+  <!-- Nav tabs -->
+  <div class="navtabs">
+    <button class="navtab active" id="tab-board" onclick="UI.switchTab('board')">
+      📋 Ward Council
+    </button>
+    <button class="navtab" id="tab-archive" onclick="UI.switchTab('archive')">
+      🗄 Archive
+    </button>
+  </div>
+
+  <!-- Combined board view: roster (left) + queue (right) -->
+  <div class="view active" id="view-board">
+    <div class="board-split">
+
+      <!-- Left: Roster -->
+      <div class="split-roster">
+        <div class="split-head">
+          <div class="split-head-top">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="split-title">Individuals &amp; Families</span>
+            </div>
+            <button class="btn sm primary" onclick="UI.openAdd()">+ Add</button>
+          </div>
+          <div class="chip-row" id="org-chips" style="margin-top:6px;"></div>
+          <div style="display:flex;gap:6px;margin-top:6px;align-items:center;">
+            <select id="focus-filter" onchange="UI._setFocusFilter(this.value)" style="font-size:11.5px;padding:3px 8px;border:1px solid var(--line-2);border-radius:6px;background:var(--surface);color:var(--ink);flex-shrink:0;max-width:180px;">
+              <option value="all">All categories</option>
+            </select>
+            <div class="search-box" style="margin:0;flex:1;min-width:0;">
+              <span style="color:var(--ink-3);">🔍</span>
+              <input id="search-input" placeholder="Search…" oninput="UI._debouncedSearch()">
+            </div>
+          </div>
+        </div>
+        <div class="split-scroll" id="roster-scroll"></div>
+      </div>
+
+      <!-- Divider -->
+      <div class="split-divider"></div>
+
+      <!-- Right: Queue -->
+      <div class="split-queue">
+        <div class="split-head">
+          <div class="split-head-top">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="split-title" id="queue-title">Agenda</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--ink-3);margin-top:2px;" id="queue-meta"></div>
+            </div>
+          </div>
+        </div>
+        <div class="split-scroll" id="queue-scroll"></div>
+      </div>
+
+    </div>
+  </div>
+
+<!-- Mobile bottom tabs (only visible on small screens) -->
+<div class="mob-tabs" id="mob-tabs">
+  <button class="mob-tab active" id="mob-tab-roster" onclick="MobNav.show('roster')">
+    <span class="mob-tab-icon">👥</span>
+    <span>Individuals</span>
+  </button>
+  <button class="mob-tab" id="mob-tab-queue" onclick="MobNav.show('queue')">
+    <span class="mob-tab-icon">📋</span>
+    <span>Added This Week</span>
+    <span class="mob-tab-badge" id="mob-queue-badge" style="display:none"></span>
+  </button>
+  <button class="mob-tab" id="mob-tab-settings" onclick="Admin.open()">
+    <span class="mob-tab-icon">⚙</span>
+    <span>Council</span>
+  </button>
+</div>
+
+<!-- Mobile FAB — quick add -->
+<button class="mob-add-fab" id="mob-add-fab" onclick="UI.openAdd(false)" title="Add individual">+</button>
+
+  <!-- Archive view -->
+  <div class="view" id="view-archive">
+    <div class="archive-view">
+      <h2>Past Meetings</h2>
+      <div class="sub">Saved at the end of each meeting. Click to expand or print.</div>
+      <div id="meeting-archive-list"></div>
+
+      <h2 style="margin-top:28px;">Archived Individuals</h2>
+      <div class="sub">Removed from active roster. Restore anytime or permanently delete.</div>
+      <div id="archive-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Detail modal ── -->
+<div class="scrim" id="scrim-detail" onclick="UI.closeDetail()"></div>
+<div class="modal" id="modal-detail">
+  <div class="modal-head" style="position:relative;display:flex;align-items:flex-start;gap:18px;">
+    <button class="modal-close" onclick="UI.closeDetail()" style="position:absolute;top:10px;right:12px;z-index:2;">✕</button>
+    <!-- Left: identity -->
+    <div style="flex:1;min-width:0;">
+      <div class="modal-name" id="d-name"></div>
+      <div class="modal-sub" id="d-sub"></div>
+      <div class="modal-meta" id="d-meta"></div>
+    </div>
+    <!-- Right: covenant path, compact -->
+    <div id="d-covenant-wrap" style="flex-shrink:0;padding-right:36px;"><div id="d-covenant-path"></div></div>
+  </div>
+  <div class="modal-body" id="d-body"></div>
+  <div class="modal-foot">
+    <div style="display:flex;gap:7px;">
+      <button class="btn sm danger" id="d-archive-btn"></button>
+    </div>
+    <div style="display:flex;gap:7px;align-items:center;">
+<button class="btn sm primary" onclick="UI.closeDetail()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add / Edit individual modal ── -->
+<div class="modal modal-sm" id="modal-add" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:none;z-index:300;box-shadow:0 8px 48px rgba(0,0,0,.28);border-radius:12px;overflow:hidden;flex-direction:column;">
+  <button type="button" class="icon-btn modal-close" onclick="UI.closeAdd()" style="position:absolute;top:12px;right:12px;z-index:1;">✕</button>
+  <div class="modal-head">
+    <div><div class="modal-name" style="font-size:16px;" id="add-title">Add individual</div></div>
+  </div>
+  <div class="modal-body" style="padding:16px 20px;">
+    <div class="field-grid" id="add-fields"></div>
+  </div>
+  <div class="modal-foot" style="justify-content:flex-end;">
+    <button type="button" class="btn sm primary" id="add-save-btn" onclick="UI.saveAdd()">Add</button>
+  </div>
+</div>
+
+<!-- ── End meeting modal ── -->
+<div class="modal" id="modal-end" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:none;z-index:300;box-shadow:0 8px 48px rgba(0,0,0,.28);border-radius:12px;overflow:hidden;flex-direction:column;">
+  <button class="icon-btn modal-close" onclick="UI.closeEndMeeting()" style="position:absolute;top:12px;right:12px;z-index:2;">✕</button>
+  <div class="modal-head">
+    <div>
+      <div class="modal-name" style="font-size:16px;">End Meeting</div>
+      <div class="modal-sub" id="end-sub"></div>
+    </div>
+  </div>
+  <div class="modal-body" style="padding:16px 20px;" id="end-body"></div>
+  <div class="modal-foot">
+    <button class="btn sm" onclick="UI.closeEndMeeting()">Cancel</button>
+    <div style="display:flex;gap:7px;">
+      <button class="btn sm" onclick="window.print()">🖨 Print report</button>
+      <button class="btn sm primary green" onclick="UI.confirmEndMeeting()">✓ End meeting &amp; roll to next</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Admin / Council modal ── -->
+<div class="modal modal-sm" id="modal-admin" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:none;z-index:300;box-shadow:0 8px 48px rgba(0,0,0,.28);border-radius:12px;overflow:hidden;flex-direction:column;">
+  <button class="icon-btn modal-close" onclick="Admin.close()" style="position:absolute;top:12px;right:12px;z-index:2;">✕</button>
+  <div class="modal-head">
+    <div>
+      <div class="modal-name" style="font-size:16px;">Ward Council Members</div>
+      <div class="modal-sub">Names appear in the Bishopric Support dropdown</div>
+    </div>
+  </div>
+  <div class="modal-body" style="padding:16px 20px;" id="admin-body"></div>
+  <div class="modal-foot">
+    <button class="btn sm" onclick="Admin.close()">Cancel</button>
+    <button class="btn sm primary" onclick="Admin.save()">Save</button>
+  </div>
+</div>
+
+
+<div class="modal modal-sm sync-modal" id="modal-sync" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:none;z-index:300;box-shadow:0 8px 48px rgba(0,0,0,.28);border-radius:12px;overflow:hidden;flex-direction:column;">
+  <button class="icon-btn modal-close" onclick="UI.closeSync()" style="position:absolute;top:12px;right:12px;z-index:2;">✕</button>
+  <div class="modal-head">
+    <div><div class="modal-name" style="font-size:16px;">☁ Sync &amp; data</div></div>
+  </div>
+  <div class="modal-body" id="sync-body"></div>
+  <div class="modal-foot">
+    <button class="btn sm" onclick="UI.closeSync()">Done</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// DATA LAYER
+// ══════════════════════════════════════════════════════
+
+const ORGS = [
+  {id:'bishopric',      label:'Bishopric',      color:'#c07030'},
+  {id:'relief-society', label:'Relief Society',  color:'#8a3a8a'},
+  {id:'elders-quorum',  label:'Elders Quorum',   color:'#2a7aaa'},
+  {id:'young-men',      label:'Young Men',       color:'#2a6a3a'},
+  {id:'young-women',    label:'Young Women',     color:'#aa4a6a'},
+  {id:'primary',        label:'Primary',         color:'#4a8a3a'},
+  {id:'sunday-school',  label:'Sunday School',   color:'#6a6aaa'},
+  {id:'ward-mission',   label:'Ward Mission',    color:'#3a8a8a'},
+  {id:'temple-fh',      label:'Temple & FH',     color:'#7a5a9a'},
+];
+const FOCUSES = [
+  {id:'living',   label:'Living the Gospel'},
+  {id:'caring',   label:'Caring for Those in Need'},
+  {id:'inviting', label:'Inviting All to Receive the Gospel'},
+  {id:'uniting',  label:'Uniting Families for Eternity'},
+];
+
+function orgById(id)  { return ORGS.find(o=>o.id===id); }
+function focusById(id){ return FOCUSES.find(f=>f.id===id); }
+
+const FOCUS_SHORT = {
+  living:   'Living the Gospel',
+  caring:   'Caring for Those in Need',
+  inviting: 'Inviting All',
+  uniting:  'Uniting Families',
+};
+function focusTag(focusId) {
+  if (!focusId) return '';
+  const short = FOCUS_SHORT[focusId] || focusById(focusId)?.label || '';
+  return `<span class="focus-tag focus-${focusId}">${esc(short)}</span>`;
+}
+
+function initials(name) {
+  if (!name) return '?';
+  return name.split(/[\s,]+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
+}
+function displayName(p) {
+  const first = (p.firstNames || '').trim();
+  const last  = (p.familyName || '').trim();
+  if (first && last) return `${first} ${last}`;
+  return first || last || '—';
+}
+function avatarColor(name) {
+  if (!name) return '#aac0d4';
+  const colors = ['#2a7aaa','#8a3a8a','#c07030','#2a6a3a','#aa4a6a','#3a8a8a','#6a6aaa','#4a8a3a','#1a6496','#7a3050'];
+  let h = 0; for (let c of name) h = (h*31 + c.charCodeAt(0)) | 0;
+  return colors[Math.abs(h) % colors.length];
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + (iso.includes('T') ? '' : 'T12:00:00'));
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function fmtShort(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + (iso.includes('T') ? '' : 'T12:00:00'));
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+function weeksSince(iso) {
+  if (!iso) return null;
+  const ms = Date.now() - new Date(iso).getTime();
+  return Math.floor(ms / (7*24*60*60*1000));
+}
+function todayISO() { return new Date().toISOString().slice(0,10); }
+function nextSundayISO() {
+  const d = new Date(); const day = d.getDay();
+  d.setDate(d.getDate() + (day===0 ? 7 : 7-day));
+  return d.toISOString().slice(0,10);
+}
+
+// ─── State ───────────────────────────────────────────
+
+const STORAGE_KEY = 'ct-v5';
+const HASH_KEY    = 'ct-v5-hash';
+const SYNC_CONFIG_KEY = 'ct-v5-sync';
+const COUNCIL_KEY = 'ct-v5-council';
+
+const COUNCIL_ROLES = [
+  {id:'bishop',      label:'Bishop'},
+  {id:'counselor1',  label:'1st Counselor'},
+  {id:'counselor2',  label:'2nd Counselor'},
+  {id:'exsec',       label:'Executive Secretary'},
+  {id:'clerk',       label:'Ward Clerk'},
+  {id:'eq',          label:'EQ President'},
+  {id:'rs',          label:'RS President'},
+  {id:'yw',          label:'YW President'},
+  {id:'primary',     label:'Primary President'},
+  {id:'ss',          label:'SS President'},
+  {id:'mission',     label:'Ward Mission Leader'},
+  {id:'temple',      label:'Temple & Family History Leader'},
+  {id:'elders',      label:'Elders'},
+];
+
+function loadCouncil() {
+  try {
+    const raw = localStorage.getItem(COUNCIL_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  // Default: role labels as names until configured
+  const cfg = {};
+  COUNCIL_ROLES.forEach(r => { cfg[r.id] = ''; });
+  return cfg;
+}
+
+function saveCouncil(cfg) {
+  localStorage.setItem(COUNCIL_KEY, JSON.stringify(cfg));
+}
+
+// Returns [{id, label, name, display}] — options for the bishopric support dropdown
+function councilOptions() {
+  const cfg = loadCouncil();
+  return COUNCIL_ROLES.map(r => {
+    const name = (cfg[r.id] || '').trim();
+    return {
+      id: r.id,
+      label: r.label,
+      name,
+      display: name ? `${r.label} — ${name}` : r.label,
+      noName: !name,
+    };
+  });
+}
+
+function defaultState() {
+  return {
+    meetingDate: todayISO(),
+    savedAt: null,
+    people: [
+      { id:'p1', familyName:'Becker', firstNames:'Jonathan',
+        submittedBy:'Sister Romero', dateSubmitted:'2026-04-27',
+        orgId:'elders-quorum', focusId:'living', bishopricSupport:'Brother Tyler',
+        gender:'m', covenantPath:['baptism','sacrament','aaronic','melchizedek'], currentStep:null,
+        status:'active', archivedAt:null, archiveNote:'',
+        queuedFor: todayISO(), lastDiscussed:'2026-05-04',
+        actions:[
+          {id:'a1',text:'Follow up after sacrament meeting',owner:'Brother Hale',
+           open:false,createdAt:'2026-05-04T10:00:00',closedAt:'2026-05-18T10:00:00',
+           closedBy:'Brother Hale',closedNote:'He came — seemed really engaged.'},
+          {id:'a2',text:'Invite to ministering interview with the Hales',owner:'Brother Hale',
+           open:true,createdAt:'2026-05-18T10:00:00',closedAt:null,closedBy:'',closedNote:''},
+        ],
+        history:[
+          {id:'h1',at:'2026-04-27T10:00:00',author:'Sister Romero',
+           text:'Has been away from church ~3 months. Open to a visit.',actionId:null},
+          {id:'h2',at:'2026-05-04T10:00:00',author:'Brother Hale',
+           text:'Visited — very positive conversation. He\'s interested.',actionId:null},
+          {id:'h3',at:'2026-05-18T10:00:00',author:'Brother Hale',
+           text:'Marked complete: Follow up after sacrament meeting',
+           note:'He came — seemed really engaged.',actionId:'a1'},
+        ]},
+      { id:'p2', gender:'f', covenantPath:[], currentStep:null, familyName:'Garcia', firstNames:'Sofia',
+        submittedBy:'Sister Lim', dateSubmitted:'2026-04-20',
+        orgId:'primary', focusId:'uniting', bishopricSupport:'',
+        status:'active', archivedAt:null, archiveNote:'',
+        queuedFor: todayISO(), lastDiscussed:'2026-05-04',
+        actions:[
+          {id:'a3',text:'Sister Lim to visit Sofia\'s parents',owner:'Sister Lim',
+           open:true,createdAt:'2026-05-04T10:00:00',closedAt:null,closedBy:'',closedNote:''},
+          {id:'a4',text:'Bishop to discuss baptism timeline with parents',owner:'Bishop Tanner',
+           open:true,createdAt:'2026-05-04T10:00:00',closedAt:null,closedBy:'',closedNote:''},
+        ],
+        history:[
+          {id:'h4',at:'2026-04-20T10:00:00',author:'Sister Lim',
+           text:'Parents not active but Sofia (age 9) wants to be baptized next year.',actionId:null},
+        ]},
+      { id:'p3', gender:'u', covenantPath:['baptism','sacrament'], currentStep:null, familyName:'Chen', firstNames:'Wei & Mei',
+        submittedBy:'Sister Park', dateSubmitted:'2026-04-20',
+        orgId:'relief-society', focusId:'uniting', bishopricSupport:'Bishop Tanner',
+        status:'active', archivedAt:null, archiveNote:'',
+        queuedFor: todayISO(), lastDiscussed:'2026-05-04',
+        actions:[
+          {id:'a5',text:'Set up temple prep discussion — pair with the Hales',owner:'Sister Park',
+           open:true,createdAt:'2026-05-04T10:00:00',closedAt:null,closedBy:'',closedNote:''},
+        ],
+        history:[
+          {id:'h5',at:'2026-04-20T10:00:00',author:'Sister Park',
+           text:'Family interested in temple prep — both baptized last year.',actionId:null},
+        ]},
+      { id:'p4', familyName:'Jensen', firstNames:'Robert',
+        submittedBy:'Brother Hale', dateSubmitted:'2026-05-14',
+        orgId:'elders-quorum', focusId:'caring', bishopricSupport:'',
+        gender:'m', covenantPath:['baptism','sacrament','aaronic','melchizedek','endowment','sealing'], currentStep:null,
+        status:'active', archivedAt:null, archiveNote:'',
+        queuedFor: todayISO(), lastDiscussed:null,
+        actions:[], history:[
+          {id:'h6',at:'2026-05-14T10:00:00',author:'Brother Hale',
+           text:'Recently widowed — could use ministering brothers reassigned.',actionId:null},
+        ]},
+      { id:'p5', familyName:'Anderson', firstNames:'Mark & Lisa',
+        submittedBy:'Bishop Tanner', dateSubmitted:'2026-03-10',
+        orgId:'bishopric', focusId:'caring', bishopricSupport:'Bishop Tanner',
+        gender:'u', covenantPath:['baptism','sacrament'], currentStep:null,
+        status:'active', archivedAt:null, archiveNote:'',
+        queuedFor:null, lastDiscussed:'2026-04-06',
+        actions:[
+          {id:'a6',text:'Check in on housing situation — offer fast offering resources',
+           owner:'Bishop Tanner',open:true,createdAt:'2026-04-06T10:00:00',
+           closedAt:null,closedBy:'',closedNote:''},
+        ],
+        history:[
+          {id:'h7',at:'2026-03-10T10:00:00',author:'Bishop Tanner',
+           text:'Family dealing with job loss and housing instability.',actionId:null},
+        ]},
+      { id:'p6', gender:'u', covenantPath:['baptism','sacrament','endowment','sealing'], currentStep:null, familyName:'Hashimoto', firstNames:'Yuki & Kenji',
+        submittedBy:'Bishop Tanner', dateSubmitted:'2026-01-15',
+        orgId:'bishopric', focusId:'living', bishopricSupport:'',
+        status:'archived', archivedAt:'2026-04-27', archiveNote:'Situation resolved. Family doing well — Kenji started a new job.',
+        queuedFor:null, lastDiscussed:'2026-04-27',
+        actions:[], history:[
+          {id:'h8',at:'2026-01-15T10:00:00',author:'Bishop Tanner',
+           text:'Housing instability after rent increase.',actionId:null},
+          {id:'h9',at:'2026-04-27T10:00:00',author:'Bishop Tanner',
+           text:'Secured new place, Kenji found work. Archiving.',actionId:null},
+        ]},
+    ]
+  };
+}
+
+let state = (() => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e){}
+  return defaultState();
+})();
+
+function saveState() {
+  state.savedAt = Date.now();
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
+  Sync.schedule(state);
+  UI.updateBadges();
+}
+
+function getQueue() {
+  const d = state.meetingDate;
+  return state.people.filter(p =>
+    p.status === 'active' && (
+      p.actions.some(a => a.open) ||
+      p.queuedFor === d
+    )
+  );
+}
+function getFollowUps() {
+  return getQueue().filter(p => p.actions.some(a=>a.open));
+}
+function getHandAdded() {
+  const d = state.meetingDate;
+  return getQueue().filter(p => p.queuedFor===d && !p.actions.some(a=>a.open));
+}
+function getRoster() {
+  return state.people.filter(p => p.status==='active');
+}
+function getArchive() {
+  return state.people.filter(p => p.status==='archived');
+}
+function personById(id) {
+  const p = state.people.find(p=>p.id===id);
+  // Lazy migration for older records loaded from cloud/localStorage —
+  // backfill new fields on first access so renderers can rely on them.
+  if (p) {
+    if (!p.covenantPath) p.covenantPath = [];
+    if (!p.gender) p.gender = 'u';
+    if (p.currentStep === undefined) p.currentStep = null;
+  }
+  return p;
+}
+function openActionCount(p) {
+  return p.actions.filter(a=>a.open).length;
+}
+
+// ══════════════════════════════════════════════════════
+// UI LAYER
+// ══════════════════════════════════════════════════════
+
+// ── Covenant path ────────────────────────────────────────────────────────────
+
+const CP_STEPS_M = [
+  {id:'baptism',     label:'Baptism &\nConfirmation'},
+  {id:'sacrament',   label:'Sacrament\n ',              ongoing:true},
+  {id:'aaronic',     label:'Aaronic\nPriesthood',      maleOnly:true},
+  {id:'melchizedek', label:'Melchizedek\nPriesthood',  maleOnly:true},
+  {id:'endowment',   label:'Temple\nEndowment'},
+  {id:'sealing',     label:'Temple\nSealing'},
+];
+const CP_STEPS_F = CP_STEPS_M.filter(s=>!s.maleOnly);
+
+function cpSteps(gender) {
+  // Family uses the male path since it includes all ordinances (priesthood + endowment + sealing).
+  // Sister's path is a subset, so a family view loses nothing by using the longer one.
+  if (gender === 'm' || gender === 'family') return CP_STEPS_M;
+  return CP_STEPS_F;
+}
+
+function renderCovenantPath(person, container) {
+  const gender  = person.gender || 'u';
+  const steps   = cpSteps(gender);
+
+  // covenantPath: array of completed step ids (white)
+  // currentStep:  single step id that is "current" (green)
+  // Click once  → completed (white). Click again → current (green). Click again → unchecked.
+  const completed = new Set(person.covenantPath || []);
+  let   current   = person.currentStep || null;
+
+  const ICONS = {
+    // Water drop + line = baptism
+    baptism:     '<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 C10 3 4 9 4 13a6 6 0 0 0 12 0C16 9 10 3 10 3z"/></svg>',
+    // Cup = sacrament
+    sacrament:   '<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h10v6a5 5 0 0 1-10 0V3z"/><line x1="10" y1="14" x2="10" y2="17"/><line x1="6.5" y1="17" x2="13.5" y2="17"/></svg>',
+    // Person + rays = aaronic priesthood
+    aaronic:     '<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="6" r="3"/><path d="M5 18c0-3 2-5 5-5s5 2 5 5"/><line x1="10" y1="1" x2="10" y2="2.2"/><line x1="10" y1="9.8" x2="10" y2="11"/><line x1="3.5" y1="6" x2="4.7" y2="6"/><line x1="15.3" y1="6" x2="16.5" y2="6"/></svg>',
+    // Person + more rays = melchizedek priesthood
+    melchizedek: '<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="6" r="3"/><path d="M5 18c0-3 2-5 5-5s5 2 5 5"/><line x1="10" y1="1" x2="10" y2="2.2"/><line x1="10" y1="9.8" x2="10" y2="11"/><line x1="3.5" y1="6" x2="4.7" y2="6"/><line x1="15.3" y1="6" x2="16.5" y2="6"/><line x1="5.1" y1="2.6" x2="5.9" y2="3.4"/><line x1="14.1" y1="3.4" x2="14.9" y2="2.6"/><line x1="5.1" y1="9.4" x2="5.9" y2="8.6"/><line x1="14.1" y1="8.6" x2="14.9" y2="9.4"/></svg>',
+    // LDS temple — center spire + angel, stepped flanking towers, body
+    endowment:   '<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="1" x2="10" y2="3"/><circle cx="10" cy="1" r="0.6" fill="currentColor" stroke="none"/><line x1="10" y1="3" x2="10" y2="6"/><line x1="7" y1="4.5" x2="7" y2="7"/><line x1="13" y1="4.5" x2="13" y2="7"/><polyline points="3,9 3,7 7,7 7,6 10,6 13,6 13,7 17,7 17,9"/><rect x="3" y="9" width="14" height="8" rx="0.3"/><line x1="3" y1="17" x2="17" y2="17"/></svg>',
+    // Two rings = sealing
+    sealing:     '<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="10" r="4"/><circle cx="12.5" cy="10" r="4"/></svg>',
+  };
+
+  // State helper — 'none' | 'completed' | 'current'
+  function stepState(id) {
+    if (id === current)       return 'current';
+    if (completed.has(id))   return 'completed';
+    return 'none';
+  }
+
+  // Style maps
+  const BG    = { none:'rgba(255,255,255,0.04)', completed:'rgba(255,255,255,0.15)', current:'rgba(77,184,138,0.28)' };
+  const BORD  = { none:'rgba(255,255,255,0.10)', completed:'rgba(255,255,255,0.38)', current:'rgba(77,184,138,0.70)' };
+  const ICOL  = { none:'rgba(255,255,255,0.22)', completed:'rgba(255,255,255,0.90)', current:'rgba(77,220,138,1.00)' };
+  const LCOL  = { none:'rgba(255,255,255,0.25)', completed:'rgba(255,255,255,0.85)', current:'rgba(77,220,138,0.95)' };
+
+  function applyStyle(btn, iconWrap, lblEls, id) {
+    const st = stepState(id);
+    btn.style.background = BG[st];
+    btn.style.borderColor = BORD[st];
+    iconWrap.style.color = ICOL[st];
+    lblEls.forEach(l => l.style.color = LCOL[st]);
+  }
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'margin-top:0;';
+
+  // Label centered above the row
+  const pathLabel = document.createElement('div');
+  pathLabel.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:0.10em;text-transform:uppercase;color:rgba(255,255,255,0.55);text-align:center;margin-bottom:8px;';
+  pathLabel.textContent = 'Covenant path';
+  wrap.appendChild(pathLabel);
+
+
+  // Step row
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:0;flex-wrap:wrap;';
+
+  steps.forEach((s, i) => {
+    const isLast   = i === steps.length - 1;
+    const st       = stepState(s.id);
+    const nextSt   = !isLast ? stepState(steps[i+1].id) : 'none';
+
+    const cell = document.createElement('div');
+    cell.style.cssText = 'display:flex;align-items:center;flex-shrink:0;';
+
+    const btn = document.createElement('div');
+    btn.style.cssText = `width:5em;height:5em;flex-shrink:0;cursor:pointer;
+      background:${BG[st]};
+      border:1px solid ${BORD[st]};
+      border-radius:7px;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.25em;
+      transition:all 0.15s;user-select:none;`;
+
+    // Icon — fixed height container so all steps are same size
+    const iconWrap = document.createElement('div');
+    iconWrap.style.cssText = `color:${ICOL[st]};
+      display:flex;align-items:center;justify-content:center;
+      width:1.4em;height:1.4em;flex-shrink:0;`;
+    iconWrap.innerHTML = ICONS[s.id] || '';
+    btn.appendChild(iconWrap);
+
+    // Labels
+    const lblEls = [];
+    s.label.split('\n').forEach((line, li) => {
+      const lbl = document.createElement('div');
+      lbl.style.cssText = `font-size:0.78em;font-weight:${li===0?600:400};
+        color:${LCOL[st]};
+        text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+        width:100%;line-height:1.2;letter-spacing:0.01em;padding:0 2px;`;
+      lbl.textContent = line;
+      btn.appendChild(lbl);
+      lblEls.push(lbl);
+    });
+
+    // Three-state click: none → completed → current → none
+    btn.addEventListener('click', () => {
+      const cur = stepState(s.id);
+      if (cur === 'none') {
+        // → completed (white)
+        completed.add(s.id);
+        if (current === s.id) current = null;
+      } else if (cur === 'completed') {
+        // → current (green) — only one step can be current; demote old current to completed
+        if (current && current !== s.id) completed.add(current);
+        current = s.id;
+        completed.delete(s.id);
+      } else {
+        // → none
+        current = null;
+        completed.delete(s.id);
+      }
+      person.covenantPath = [...completed];
+      person.currentStep  = current;
+      saveState();
+      renderCovenantPath(person, container);
+      UI.renderAll();
+    });
+
+    btn.addEventListener('mouseenter', () => {
+      if (stepState(s.id) === 'none') btn.style.background = 'rgba(255,255,255,0.08)';
+    });
+    btn.addEventListener('mouseleave', () => {
+      applyStyle(btn, iconWrap, lblEls, s.id);
+    });
+
+    cell.appendChild(btn);
+
+    // Connector
+    if (!isLast) {
+      const lineEl = document.createElement('div');
+      const bothActive = (st === 'completed' || st === 'current') && (nextSt === 'completed' || nextSt === 'current');
+      lineEl.style.cssText = `width:0.5em;flex-shrink:0;height:1px;
+        background:${bothActive ? 'rgba(255,255,255,0.30)' : 'rgba(255,255,255,0.08)'};`;
+      cell.appendChild(lineEl);
+    }
+
+    row.appendChild(cell);
+  });
+
+  wrap.appendChild(row);
+  container.innerHTML = '';
+  container.appendChild(wrap);
+}
+
+
+
+const UI = {
+  currentTab: 'board',
+  detailId: null,
+  addQueueOnCreate: false,
+  editingId: null,
+
+  init() {
+    const u = localStorage.getItem('ct-user') || '';
+    document.getElementById('tb-user').value = u;
+    state.meetingDate = state.meetingDate || todayISO();
+    
+    this.renderAll();
+    Sync.init();
+  },
+
+  setCurrentUser(v) {
+    App.currentUser = v;
+    localStorage.setItem('ct-user', v);
+  },
+
+  switchTab(tab) {
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.querySelectorAll('.navtab').forEach(t=>t.classList.remove('active'));
+    document.getElementById('view-'+tab).classList.add('active');
+    document.getElementById('tab-'+tab).classList.add('active');
+    this.currentTab = tab;
+    if (tab==='archive') this.renderArchive();
+  },
+
+  renderAll() {
+    this.renderQueue();
+    this.renderRoster();
+    this.renderArchive();
+    this.updateBadges();
+    MobNav.updateBadge();
+  },
+
+  updateBadges() {
+    // badges removed from UI — counts shown in section headers only
+    
+    const title = document.getElementById('queue-title');
+    if (title) title.textContent = 'Agenda — ' + fmtDate(state.meetingDate);
+    const meta = document.getElementById('queue-meta');
+    if (meta) {
+      const q = getQueue(), disc = q.filter(p=>p.lastDiscussed===state.meetingDate).length;
+      meta.textContent = `${q.length} individuals · ${disc} updated this meeting`;
+    }
+  },
+
+  // ─── Queue ────────────────────────────────────────
+
+  renderQueue() {
+    this.updateBadges();
+    const el = document.getElementById('queue-scroll');
+    const followUps = getFollowUps();
+    const handAdded = getHandAdded();
+    let html = '';
+
+    html += this._sectionHeader('Follow Up', followUps.length);
+    if (followUps.length === 0) {
+      html += `<div class="queue-empty">No open follow-ups — great work!</div>`;
+    } else {
+      followUps.forEach(p => { html += this._queueCard(p); });
+    }
+
+    html += this._sectionHeader('Discussion', handAdded.length);
+    if (handAdded.length === 0) {
+      html += `<div class="queue-empty">No one here yet — use → to add names from the roster.</div>`;
+    } else {
+      handAdded.forEach(p => { html += this._queueCard(p); });
+    }
+
+    el.innerHTML = html;
+    this._bindCardClicks(el);
+    el.querySelectorAll('.action-check').forEach(cb => {
+      cb.addEventListener('click', e => {
+        e.stopPropagation();
+        const pid = cb.closest('[data-pid]').dataset.pid;
+        const aid = cb.dataset.aid;
+        UI._handleInlineCheck(pid, aid, cb);
+      });
+    });
+
+  },
+
+  _sectionHeader(label, count) {
+    return `<div class="section-header">
+      <span class="label">${label}</span>
+      <span class="count">${count}</span>
+      <div class="section-sep"></div>
+    </div>`;
+  },
+
+  _queueCard(p) {
+    const org = orgById(p.orgId);
+    const discussed = p.lastDiscussed === state.meetingDate;
+    const openActions = p.actions.filter(a=>a.open);
+    const cls = 'pcard' + (discussed?' discussed':'');
+    const staleWks = weeksSince(p.lastDiscussed);
+    let timeTag = '';
+    if (discussed) timeTag = `<div class="discussed-stamp">✓ Today</div>`;
+    else if (p.lastDiscussed) timeTag = `<div class="last-seen ${staleWks>=4?'stale-stamp':''}">Last: ${fmtShort(p.lastDiscussed)}${staleWks>=4?' ⚠':''}</div>`;
+    else timeTag = `<div class="last-seen" style="color:var(--ink-4);font-style:italic;">Never discussed</div>`;
+
+    let actionsHtml = '';
+    if (openActions.length > 0) {
+      actionsHtml = `<div class="pcard-actions">`;
+      openActions.forEach(a => {
+        actionsHtml += `<div class="action-row">
+          <div class="action-check" data-aid="${a.id}"></div>
+          <div class="action-text">${esc(a.text)}</div>
+          ${a.owner?`<div class="action-owner-tag"><div class="mini-av" style="background:${avatarColor(a.owner)}">${initials(a.owner)}</div>${esc(a.owner)}</div>`:''}
+        </div>`;
+      });
+      actionsHtml += `</div>`;
+    }
+
+    return `<div class="${cls}" data-pid="${p.id}">
+      <div class="pcard-main">
+        <div class="pcard-info">
+          <div class="pcard-name">${esc(displayName(p))}</div>
+          <div class="pcard-sub">
+            ${org?`<span class="org-tag" style="border-color:${org.color}22;color:${org.color};">${org.label}</span>`:''}
+            ${focusTag(p.focusId)}
+            ${openActions.length>0?`<span>${openActions.length} open action${openActions.length>1?'s':''}</span>`:
+              `<span style="color:var(--ink-3);font-style:italic;">No actions — needs discussion</span>`}
+          </div>
+        </div>
+        <div class="pcard-right">
+          ${timeTag}
+          ${openActions.length===0 
+            ? `<div class="queue-toggle to-roster" data-pid="${p.id}" title="Move back to roster" onclick="event.stopPropagation();UI.moveToRoster('${p.id}')">←</div>`
+            : `<div class="queue-toggle locked" title="Has open actions — cannot remove from queue. Close all actions to move back to roster.">←</div>`}
+        </div>
+      </div>
+      ${actionsHtml}
+    </div>`;
+  },
+
+  _handleInlineCheck(pid, aid, el) {
+    // Show a small inline completion note prompt, then close
+    const row = el.closest('.action-row');
+    let noteEl = row.querySelector('.inline-note');
+    if (noteEl) return; // already open
+    noteEl = document.createElement('div');
+    noteEl.className = 'inline-note';
+    noteEl.style.cssText = 'display:flex;gap:6px;margin-top:5px;align-items:center;grid-column:1/-1;flex:1;';
+    noteEl.addEventListener('click', e => e.stopPropagation());
+    noteEl.innerHTML = `<input placeholder="Optional note on completion…" style="flex:1;border:1px solid var(--line-2);border-radius:5px;padding:5px 8px;font-size:12px;outline:none;" onclick="event.stopPropagation()">
+      <button class="btn xs primary" onclick="event.stopPropagation()">Close action</button>
+      <button class="btn xs" onclick="event.stopPropagation()">Cancel</button>`;
+    row.appendChild(noteEl);
+    row.style.flexWrap = 'wrap';
+    noteEl.querySelector('input').focus();
+    noteEl.querySelectorAll('button')[0].addEventListener('click', (e) => {
+      e.stopPropagation();
+      const note = noteEl.querySelector('input').value.trim();
+      App.closeAction(pid, aid, note);
+    });
+    noteEl.querySelectorAll('button')[1].addEventListener('click', (e) => {
+      e.stopPropagation();
+      noteEl.remove();
+    });
+  },
+
+  // ─── Roster ──────────────────────────────────────
+
+  renderRoster() {
+    this._renderOrgChips();
+    this._renderFocusChips();
+    const el = document.getElementById('roster-scroll');
+    const q = document.getElementById('search-input').value.trim().toLowerCase();
+    const f = this._activeOrgFilter;
+    const ff = this._activeFocusFilter;
+    const meetingDate = state.meetingDate;
+    let people = getRoster().filter(p => {
+      // Hide anyone already on the queue — they appear on the right panel instead
+      const inQueue = p.queuedFor===meetingDate || p.actions.some(a=>a.open);
+      if (inQueue) return false;
+      if (f !== 'all' && p.orgId !== f) return false;
+      if (ff !== 'all' && p.focusId !== ff) return false;
+      if (q) {
+        const hay = [p.familyName,p.firstNames,p.submittedBy,
+          p.actions.map(a=>a.text+' '+a.owner).join(' '),
+          p.history.map(h=>h.text).join(' '),
+          orgById(p.orgId)?.label].filter(Boolean).join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    people.sort((a,b)=>a.familyName.localeCompare(b.familyName));
+    const d = state.meetingDate;
+    el.innerHTML = people.map(p => {
+      const org = orgById(p.orgId);
+      const inQueue = p.queuedFor===d || p.actions.some(a=>a.open);
+      const openCnt = openActionCount(p);
+      const wks = weeksSince(p.lastDiscussed);
+      const stale = wks !== null && wks >= 4;
+      return `<div class="pcard${stale?' stale':''}" data-pid="${p.id}">
+        <div class="pcard-main">
+          <div class="pcard-info">
+            <div class="pcard-name">${esc(displayName(p))}</div>
+            <div class="pcard-sub">
+              ${org?`<span class="org-tag" style="border-color:${org.color}22;color:${org.color};">${org.label}</span>`:''}
+              ${focusTag(p.focusId)}
+              ${openCnt>0?`<span class="spill spill-open" style="font-size:10px;padding:1px 7px;">${openCnt} open</span>`:''}
+              ${stale?`<span style="font-size:10px;color:var(--amber);font-weight:600;">${wks} wks ago ⚠</span>`:(p.lastDiscussed?`<span style="font-size:10px;color:var(--ink-4);">Last: ${fmtShort(p.lastDiscussed)}</span>`:'')}
+            </div>
+          </div>
+          <div class="pcard-right" style="flex-direction:row;align-items:center;gap:8px;">
+            <div class="queue-toggle to-queue" data-pid="${p.id}" title="Add to meeting queue" onclick="event.stopPropagation();UI.moveToQueue('${p.id}')">→</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    if (people.length === 0) {
+      const allQueued = getRoster().length > 0 && getRoster().every(p => p.queuedFor===state.meetingDate || p.actions.some(a=>a.open));
+      const msg = allQueued
+        ? 'Everyone is on the meeting queue — see the right panel.'
+        : (q || f !== 'all' ? 'No individuals match those filters.' : 'No individuals yet.');
+      el.innerHTML = `<div style="padding:40px;text-align:center;color:var(--ink-3);font-style:italic;">${msg}</div>`;
+    }
+    this._bindCardClicks(el);
+  },
+
+  _renderOrgChips() {
+    const el = document.getElementById('org-chips');
+    const counts = {};
+    const meetingDate = state.meetingDate;
+    // Only count people who would actually appear in the roster panel
+    // (queued people show on the right side, not the left)
+    const visibleRoster = getRoster().filter(p => {
+      const inQueue = p.queuedFor===meetingDate || p.actions.some(a=>a.open);
+      return !inQueue;
+    });
+    visibleRoster.forEach(p=>{ counts[p.orgId]=(counts[p.orgId]||0)+1; });
+    const total = visibleRoster.length;
+    const f = this._activeOrgFilter;
+    el.innerHTML = `<button class="chip${f==='all'?' active':''}" onclick="UI._setOrgFilter('all')">All <span class="cnt">${total}</span></button>`
+      + ORGS.filter(o=>counts[o.id]).map(o =>
+        `<button class="chip${f===o.id?' active':''}" onclick="UI._setOrgFilter('${o.id}')">${o.label} <span class="cnt">${counts[o.id]||0}</span></button>`
+      ).join('');
+  },
+
+  _activeOrgFilter: 'all',
+  _activeFocusFilter: 'all',
+
+  _renderFocusChips() {
+    const sel = document.getElementById('focus-filter');
+    if (!sel) return;
+    const meetingDate = state.meetingDate;
+    const visible = getRoster().filter(p => !(p.queuedFor===meetingDate || p.actions.some(a=>a.open)));
+    const counts = {};
+    visible.forEach(p => { if (p.focusId) counts[p.focusId] = (counts[p.focusId]||0)+1; });
+    const ff = this._activeFocusFilter;
+    // Rebuild options preserving current selection
+    sel.innerHTML = `<option value="all">All categories</option>`
+      + FOCUSES.filter(f => counts[f.id]).map(f =>
+        `<option value="${f.id}"${ff===f.id?' selected':''}>${esc(f.label)} (${counts[f.id]})</option>`
+      ).join('');
+    sel.value = ff;
+  },
+
+  _setOrgFilter(id) {
+    this._activeOrgFilter = id;
+    this.renderRoster();
+  },
+
+  _setFocusFilter(id) {
+    this._activeFocusFilter = id;
+    this.renderRoster();
+  },
+
+  _searchTimer: null,
+  _debouncedSearch() {
+    clearTimeout(this._searchTimer);
+    this._searchTimer = setTimeout(() => this.renderRoster(), 120);
+  },
+
+  moveToQueue(pid) {
+    const p = personById(pid);
+    if (!p) return;
+    p.queuedFor = state.meetingDate;
+    saveState();
+    this.renderQueue();
+    this.renderRoster();
+    MobNav.updateBadge();
+    if (MobNav.isMobile()) MobNav.show('queue');
+  },
+
+  moveToRoster(pid) {
+    const p = personById(pid);
+    if (!p) return;
+    const hasOpen = p.actions.some(a=>a.open);
+    if (hasOpen) { toast('Close all open actions first to move back to roster'); return; }
+    p.queuedFor = null;
+    saveState();
+    this.renderQueue();
+    this.renderRoster();
+  },
+
+  // ─── Archive ─────────────────────────────────────
+
+  renderArchive() {
+    // ── Past meetings
+    const mal = document.getElementById('meeting-archive-list');
+    if (mal) {
+      const meetings = state.meetingArchive || [];
+      if (meetings.length === 0) {
+        mal.innerHTML = `<div style="padding:24px;text-align:center;color:var(--ink-3);font-style:italic;border:1px dashed var(--line-2);border-radius:var(--r);">No meetings saved yet — end a meeting to create a record.</div>`;
+      } else {
+        mal.innerHTML = meetings.map((m, i) => {
+          const actionOwners = {};
+          (m.openActions || []).forEach(a => {
+            if (!actionOwners[a.owner]) actionOwners[a.owner] = [];
+            actionOwners[a.owner].push(a);
+          });
+          const ownerList = Object.keys(actionOwners).sort();
+          return `<div class="mtg-archive-card">
+            <div class="mtg-archive-head" onclick="UI._toggleMtgArchive('ma-${i}')">
+              <span class="mtg-archive-chevron" id="mac-${i}">▶</span>
+              <span class="mtg-archive-date">${fmtDate(m.date)}</span>
+              <span class="mtg-archive-meta">
+                <span>${m.discussed.length} discussed</span>
+                <span>${m.openActions.length} open action${m.openActions.length!==1?'s':''}</span>
+              </span>
+              <button class="mtg-print-btn" onclick="event.stopPropagation();UI._printMeeting('ma-${i}')">Print</button>
+            </div>
+            <div class="mtg-archive-body" id="ma-${i}">
+              <div class="mtg-archive-section">
+                <h4>Discussed (${m.discussed.length})</h4>
+                ${m.discussed.length === 0
+                  ? `<div style="color:var(--ink-3);font-style:italic;font-size:13px;">None recorded</div>`
+                  : m.discussed.map(d => `<div class="mtg-archive-row"><span class="mar-who">${esc(d.name)}</span><span class="mar-org">${esc(d.org)}${d.focus?' · '+esc(d.focus):''}</span></div>`).join('')}
+              </div>
+              ${ownerList.length > 0 ? `<div class="mtg-archive-section">
+                <h4>Open Actions by Owner</h4>
+                ${ownerList.map(owner => `
+                  <div style="margin-bottom:8px;">
+                    <div style="font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:3px;">${esc(owner)}</div>
+                    ${actionOwners[owner].map(a => `<div class="mtg-archive-row" style="padding-left:8px;"><span class="mar-who">${esc(a.person)}</span><span class="mar-org">${esc(a.action)}</span></div>`).join('')}
+                  </div>`).join('')}
+              </div>` : ''}
+            </div>
+          </div>`;
+        }).join('');
+      }
+    }
+
+    // ── Archived individuals
+    const el = document.getElementById('archive-list');
+    const arch = getArchive();
+    if (arch.length === 0) {
+      el.innerHTML = `<div style="padding:32px;text-align:center;color:var(--ink-3);font-style:italic;border:1px dashed var(--line-2);border-radius:var(--r);">No archived individuals yet.</div>`;
+      return;
+    }
+    el.innerHTML = arch.map(p => {
+      const org = orgById(p.orgId);
+      return `<div class="pcard" data-pid="${p.id}" style="border-left-color:var(--ink-4);opacity:.85;margin-bottom:5px;cursor:pointer;">
+        <div class="pcard-main">
+          <div class="pcard-avatar" style="background:var(--ink-4)">${initials(displayName(p))}</div>
+          <div class="pcard-info">
+            <div class="pcard-name">${esc(displayName(p))}</div>
+            <div class="pcard-sub">
+              ${org?`<span class="org-tag">${org.label}</span>`:''}
+              <span>Archived ${p.archivedAt?fmtDate(p.archivedAt):''}</span>
+            </div>
+          </div>
+          <div class="pcard-right" style="flex-direction:row;gap:7px;align-items:center;">
+            <button class="btn sm" onclick="event.stopPropagation();App.restorePerson('${p.id}')">Restore</button>
+            <button class="btn sm danger" onclick="event.stopPropagation();App.deletePerson('${p.id}')">Delete</button>
+          </div>
+        </div>
+        ${p.archiveNote?`<div class="archive-reason">📝 ${esc(p.archiveNote)}</div>`:''}
+      </div>`;
+    }).join('');
+    this._bindCardClicks(el);
+  },
+
+  // ─── Detail modal ────────────────────────────────
+
+  openDetail(pid) {
+    const p = personById(pid);
+    if (!p) return;
+    this.detailId = pid;
+    this._renderDetail(p);
+    document.getElementById('scrim-detail').classList.add('open');
+    document.getElementById('modal-detail').classList.add('open');
+  },
+
+  closeDetail() {
+    document.getElementById('scrim-detail').classList.remove('open');
+    document.getElementById('modal-detail').classList.remove('open');
+    this.detailId = null;
+  },
+
+  _renderDetail(p) {
+    const org = orgById(p.orgId);
+    const focus = focusById(p.focusId);
+    const openCnt = openActionCount(p);
+    const discussed = p.lastDiscussed === state.meetingDate;
+
+    document.getElementById('d-name').textContent = displayName(p);
+    document.getElementById('d-sub').textContent = focus ? focus.label : '';
+
+    // Covenant path — rendered into the pre-existing header container
+    const cpContainer = document.getElementById('d-covenant-path');
+    if (cpContainer) renderCovenantPath(p, cpContainer);
+
+    const meta = document.getElementById('d-meta');
+    meta.innerHTML = openCnt>0
+      ? `<span class="spill spill-open">${openCnt} open action${openCnt>1?'s':''}</span>`
+      : `<span class="spill spill-none">No open actions</span>`;
+    if (p.lastDiscussed === state.meetingDate) {
+      meta.innerHTML += `<span style="font-size:11px;color:rgba(77,184,138,0.90);font-weight:600;">✓ Discussed today</span>`;
+    } else if (p.lastDiscussed) {
+      meta.innerHTML += `<span style="font-size:11px;color:rgba(255,255,255,.50);">Last discussed ${fmtDate(p.lastDiscussed)}</span>`;
+    }
+
+    const archBtn = document.getElementById('d-archive-btn');
+    archBtn.textContent = p.status==='active' ? 'Archive' : 'Restore';
+    archBtn.onclick = () => p.status==='active' ? UI._promptArchive(p.id) : App.restorePerson(p.id);
+
+    // discussed stamp shown in meta, no manual button needed
+
+    this._renderDetailBody(p);
+  },
+
+  _renderDetailBody(p) {
+    const body = document.getElementById('d-body');
+    body.innerHTML = '';
+
+    // ── Actions section
+    const actSec = this._makeSection('Action items');
+    const actList = document.createElement('div');
+    actList.className = 'action-list';
+
+    const openActions = p.actions.filter(a=>a.open);
+
+    if (openActions.length === 0) {
+      actList.innerHTML = `<div style="color:var(--ink-3);font-style:italic;font-size:13px;padding:4px 0;">No open actions.</div>`;
+    }
+    openActions.forEach(a => {
+      const notes = a.notes || [];
+      const item = document.createElement('div');
+      item.className = 'action-item open-item';
+      item.addEventListener('click', e => e.stopPropagation());
+      item.innerHTML = `
+        <div class="action-item-main">
+          <div class="action-item-body">
+            <div class="action-item-text">${esc(a.text)}</div>
+            <div class="action-item-foot">
+              <div class="action-item-owner">
+                ${a.owner ? `<div class="mini-av" style="background:${avatarColor(a.owner)};width:18px;height:18px;font-size:8px;">${initials(a.owner)}</div>${esc(a.owner)}` : 'Unassigned'}
+              </div>
+              <span class="action-item-date">Assigned ${fmtShort(a.createdAt)}</span>
+              <button class="h-delete-btn" title="Delete action" style="margin-left:auto;">✕</button>
+            </div>
+            ${notes.length > 0 ? `<div class="action-notes">${notes.map(n => `<div class="action-note">${esc(n.text)}<div class="an-meta">${esc(n.author)} · ${fmtShort(n.at)}</div></div>`).join('')}</div>` : ''}
+            <div class="action-note-input" id="ani-${a.id}">
+              <input placeholder="Add a note…" id="ani-inp-${a.id}">
+              <button class="btn xs primary" id="ani-save-${a.id}">Post</button>
+              <button class="btn xs" id="ani-cancel-${a.id}">✕</button>
+            </div>
+            <div class="action-footer">
+              <button class="note-toggle" id="note-tog-${a.id}">+ Note</button>
+              <button class="btn xs primary" id="complete-${a.id}">Complete</button>
+            </div>
+            <div class="completion-area" id="comp-${a.id}">
+              <input placeholder="Completion note (optional)…" id="comp-inp-${a.id}">
+              <div class="row">
+                <button class="btn xs primary" id="comp-save-${a.id}">Mark complete</button>
+                <button class="btn xs" id="comp-cancel-${a.id}">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      item.querySelector('.h-delete-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        if (confirm('Delete this action?')) App.deleteAction(UI.detailId, a.id);
+      });
+
+      const noteTog   = item.querySelector(`#note-tog-${a.id}`);
+      const noteInp   = item.querySelector(`#ani-${a.id}`);
+      const noteField = item.querySelector(`#ani-inp-${a.id}`);
+      noteTog.addEventListener('click', e => {
+        e.stopPropagation();
+        noteInp.classList.toggle('open');
+        if (noteInp.classList.contains('open')) noteField.focus();
+        noteTog.textContent = noteInp.classList.contains('open') ? '− Note' : '+ Note';
+      });
+      item.querySelector(`#ani-save-${a.id}`).addEventListener('click', e => {
+        e.stopPropagation();
+        App.addActionNote(p.id, a.id, noteField.value.trim());
+      });
+      item.querySelector(`#ani-cancel-${a.id}`).addEventListener('click', e => {
+        e.stopPropagation();
+        noteInp.classList.remove('open');
+        noteTog.textContent = '+ Note';
+        noteField.value = '';
+      });
+      noteField.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.stopPropagation(); App.addActionNote(p.id, a.id, noteField.value.trim()); }
+        if (e.key === 'Escape') { e.stopPropagation(); noteInp.classList.remove('open'); noteTog.textContent = '+ Note'; }
+      });
+
+      const compBtn  = item.querySelector(`#complete-${a.id}`);
+      const compArea = item.querySelector(`#comp-${a.id}`);
+      const compInp  = item.querySelector(`#comp-inp-${a.id}`);
+      compBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        compArea.classList.toggle('show');
+        if (compArea.classList.contains('show')) compInp.focus();
+      });
+      item.querySelector(`#comp-save-${a.id}`).addEventListener('click', e => {
+        e.stopPropagation();
+        App.closeAction(p.id, a.id, compInp.value.trim());
+      });
+      item.querySelector(`#comp-cancel-${a.id}`).addEventListener('click', e => {
+        e.stopPropagation();
+        compArea.classList.remove('show');
+        compInp.value = '';
+      });
+      compInp.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.stopPropagation(); App.closeAction(p.id, a.id, compInp.value.trim()); }
+        if (e.key === 'Escape') { e.stopPropagation(); compArea.classList.remove('show'); }
+      });
+
+      actList.appendChild(item);
+    });
+
+    // Add action row — with owner typeahead
+    const addRow = document.createElement('div');
+    addRow.className = 'add-action-row';
+    addRow.addEventListener('click', e => e.stopPropagation());
+
+    const textInput = document.createElement('input');
+    textInput.id = 'new-action-text';
+    textInput.placeholder = 'New action item…';
+
+    const ownerWrap_obj = UI._buildOwnerInput({ placeholder: 'Owner' });
+    const ownerWrap  = ownerWrap_obj.wrap;
+    const ownerInput = ownerWrap_obj.input;
+    // Focus action text after selecting a suggestion
+    ownerInput.addEventListener('change', () => textInput.focus());
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn sm primary';
+    addBtn.textContent = '+ Add';
+
+    const doAdd = () => {
+      const text = textInput.value.trim();
+      const owner = ownerInput.value.trim();
+      if (!text) return;
+      App.addAction(p.id, text, owner);
+      textInput.value = '';
+      ownerInput.value = '';
+      textInput.focus();
+    };
+    addBtn.addEventListener('click', e => { e.stopPropagation(); doAdd(); });
+    textInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.stopPropagation(); doAdd(); } });
+
+    addRow.appendChild(textInput);
+    addRow.appendChild(ownerWrap);
+    addRow.appendChild(addBtn);
+    actSec.appendChild(actList);
+    actSec.appendChild(addRow);
+    body.appendChild(actSec);
+
+    // ── Notes section
+    const notesSec = this._makeSection('Discussion notes');
+    notesSec.classList.add('detail-history-section');
+    const histList = document.createElement('div');
+    histList.className = 'history-list';
+    const hist = [...p.history].reverse();
+    if (hist.length === 0) {
+      histList.innerHTML = `<div style="color:var(--ink-3);font-style:italic;font-size:13px;padding:4px;">No notes yet.</div>`;
+    }
+    hist.forEach(h => {
+      const item = document.createElement('div');
+      item.className = 'h-item' + (h.actionId?' action-close':'');
+      item.innerHTML = `<div class="h-av" style="background:${avatarColor(h.author)}">${initials(h.author)}</div>
+        <div class="h-body">
+          <div class="h-meta"><strong>${esc(h.author)}</strong><span>·</span><span>${fmtDate(h.at)}</span>
+            <button class="h-delete-btn" data-hid="${h.id}" title="Delete note" onclick="event.stopPropagation()">✕</button>
+          </div>
+          <div class="h-text">${esc(h.text)}${h.note?`\n<em style="color:var(--ink-3)">"${esc(h.note)}"</em>`:''}</div>
+          ${(h.actionNotes && h.actionNotes.length) ? `<div class="action-notes" style="margin-top:6px;">${h.actionNotes.map(n=>`
+            <div class="action-note">${esc(n.text)}<div class="an-meta">${esc(n.author)} · ${fmtShort(n.at)}</div></div>`).join('')}
+          </div>` : ''}
+        </div>`;
+      item.querySelector('.h-delete-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        if (confirm('Delete this note? This cannot be undone.')) {
+          App.deleteNote(UI.detailId, h.id);
+        }
+      });
+      histList.appendChild(item);
+    });
+    const noteInput = document.createElement('textarea');
+    noteInput.className = 'note-area';
+    noteInput.placeholder = 'Add a discussion note…';
+    noteInput.addEventListener('click', e=>e.stopPropagation());
+    noteInput.addEventListener('keydown', e=>{ if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){e.stopPropagation();App.addNote(p.id,noteInput.value.trim());noteInput.value='';} });
+    const noteFooter = document.createElement('div');
+    noteFooter.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-top:6px;';
+    noteFooter.innerHTML = '';
+    const noteBtn = document.createElement('button');
+    noteBtn.className = 'btn sm primary';
+    noteBtn.textContent = '+ Add note';
+    noteBtn.addEventListener('click', (e)=>{ e.stopPropagation(); App.addNote(p.id, noteInput.value.trim()); noteInput.value=''; });
+    noteFooter.appendChild(noteBtn);
+    notesSec.appendChild(histList);
+    notesSec.appendChild(noteInput);
+    notesSec.appendChild(noteFooter);
+    body.appendChild(notesSec);
+
+    // ── Stewardship section — always-editable inline fields
+    const stewSec = this._makeSection('Stewardship details');
+    const stewGrid = this._buildInlineFields(p);
+    stewSec.appendChild(stewGrid);
+    body.appendChild(stewSec);
+  },
+
+  _makeSection(title, scrollable) {
+    const sec = document.createElement('div');
+    sec.className = 'modal-section' + (scrollable ? ' scrollable' : '');
+    const h = document.createElement('h4');
+    h.textContent = title;
+    sec.appendChild(h);
+    return sec;
+  },
+
+  // ─── Owner typeahead ─────────────────────────────
+  // Returns {wrap, input, sugBox} — caller appends wrap wherever needed.
+  _buildOwnerInput(opts = {}) {
+    const { placeholder = 'Owner', initialValue = '', width = '220px' } = opts;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'owner-wrap';
+    if (width) wrap.style.width = width;
+
+    const inp = document.createElement('input');
+    inp.placeholder = placeholder;
+    inp.value = initialValue;
+    inp.autocomplete = 'off';
+
+    const sugBox = document.createElement('div');
+    sugBox.className = 'owner-suggestions';
+    wrap.appendChild(inp);
+    wrap.appendChild(sugBox);
+
+    let focusedIdx = -1;
+
+    function buildSuggestions(q) {
+      const options = councilOptions().filter(o => o.name || o.id === 'elders');
+      const lq = q.toLowerCase();
+      const matches = lq
+        ? options.filter(o => o.name.toLowerCase().includes(lq) || o.label.toLowerCase().includes(lq))
+        : options;
+      sugBox.innerHTML = '';
+      focusedIdx = -1;
+      if (matches.length === 0) { sugBox.classList.remove('open'); return; }
+      matches.forEach(o => {
+        const item = document.createElement('div');
+        item.className = 'owner-suggestion';
+        const av = document.createElement('div');
+        av.className = 'sug-av';
+        av.style.background = avatarColor(o.name || o.label);
+        av.textContent = initials(o.name || o.label);
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = o.name || o.label;
+        const roleSpan = document.createElement('span');
+        roleSpan.className = 'sug-role';
+        roleSpan.textContent = o.label;
+        item.dataset.name = o.name || o.label;
+        item.addEventListener('mousedown', e => {
+          e.preventDefault();
+          inp.value = o.name || o.label;
+          sugBox.classList.remove('open');
+          inp.dispatchEvent(new Event('change'));
+        });
+        item.appendChild(av);
+        item.appendChild(nameSpan);
+        if (o.name) item.appendChild(roleSpan);
+        sugBox.appendChild(item);
+      });
+      sugBox.classList.add('open');
+    }
+
+    inp.addEventListener('input',  () => buildSuggestions(inp.value));
+    inp.addEventListener('focus',  () => buildSuggestions(inp.value));
+    inp.addEventListener('blur',   () => setTimeout(() => sugBox.classList.remove('open'), 120));
+    inp.addEventListener('keydown', e => {
+      const items = sugBox.querySelectorAll('.owner-suggestion');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        focusedIdx = Math.min(focusedIdx + 1, items.length - 1);
+        items.forEach((el, i) => el.classList.toggle('focused', i === focusedIdx));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        focusedIdx = Math.max(focusedIdx - 1, 0);
+        items.forEach((el, i) => el.classList.toggle('focused', i === focusedIdx));
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        if (focusedIdx >= 0 && items[focusedIdx]) {
+          e.preventDefault();
+          inp.value = items[focusedIdx].dataset.name;
+          sugBox.classList.remove('open');
+          inp.dispatchEvent(new Event('change'));
+        }
+      } else if (e.key === 'Escape') {
+        sugBox.classList.remove('open');
+      }
+    });
+
+    return { wrap, input: inp, sugBox };
+  },
+
+  // _buildInlineFields — always-editable stewardship grid.
+  // Text fields use contenteditable; selects are always visible.
+  // Changes auto-save on blur/change with no explicit Save button.
+  _buildInlineFields(p) {
+    const g = document.createElement('div');
+    g.className = 'field-grid';
+
+    const save = () => {
+      // Stewardship edits do not count as "discussed" — only notes and action changes do
+      saveState();
+      UI.renderAll();
+    };
+
+    // Helper: inline text field
+    const textField = (label, getValue, setValue, opts) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      if (opts && opts.fullWidth) wrap.style.gridColumn = '1/-1';
+      const lbl = document.createElement('label');
+      lbl.textContent = label;
+      const inp = document.createElement('input');
+      inp.value = getValue();
+      inp.style.cssText = 'border:none;border-bottom:1px solid transparent;background:transparent;padding:2px 0;font-size:13.5px;color:var(--ink);width:100%;outline:none;font-family:inherit;transition:border-color 0.15s;cursor:text;';
+      inp.addEventListener('focus', () => { inp.style.borderBottomColor = 'var(--accent)'; inp.style.background = 'rgba(20,115,181,0.04)'; inp.style.borderRadius = '3px'; inp.style.padding = '2px 4px'; });
+      inp.addEventListener('blur', () => { inp.style.borderBottomColor = 'transparent'; inp.style.background = 'transparent'; inp.style.padding = '2px 0'; const v = inp.value.trim(); if (v !== getValue()) { setValue(v); save(); } });
+      inp.addEventListener('click', e => e.stopPropagation());
+      wrap.appendChild(lbl); wrap.appendChild(inp);
+      return wrap;
+    };
+
+    // Helper: date field
+    const dateField = (label, getValue, setValue) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      const lbl = document.createElement('label');
+      lbl.textContent = label;
+      const inp = document.createElement('input');
+      inp.type = 'date'; inp.value = getValue();
+      inp.style.cssText = 'border:none;border-bottom:1px solid transparent;background:transparent;padding:2px 0;font-size:13.5px;color:var(--ink);width:100%;outline:none;font-family:inherit;transition:border-color 0.15s;cursor:pointer;';
+      inp.addEventListener('focus', () => { inp.style.borderBottomColor = 'var(--accent)'; });
+      inp.addEventListener('blur', () => { inp.style.borderBottomColor = 'transparent'; });
+      inp.addEventListener('change', e => { e.stopPropagation(); setValue(inp.value); save(); });
+      inp.addEventListener('click', e => e.stopPropagation());
+      wrap.appendChild(lbl); wrap.appendChild(inp);
+      return wrap;
+    };
+
+    // Helper: select field
+    const selectField = (label, options, getValue, setValue, opts) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      if (opts && opts.fullWidth) wrap.style.gridColumn = '1/-1';
+      const lbl = document.createElement('label');
+      lbl.textContent = label;
+      const sel = document.createElement('select');
+      sel.style.cssText = 'border:none;border-bottom:1px solid transparent;background:transparent;padding:2px 0;font-size:13.5px;color:var(--ink);width:100%;outline:none;font-family:inherit;transition:border-color 0.15s;cursor:pointer;appearance:auto;';
+      sel.addEventListener('focus', () => { sel.style.borderBottomColor = 'var(--accent)'; });
+      sel.addEventListener('blur', () => { sel.style.borderBottomColor = 'transparent'; });
+      const blank = document.createElement('option');
+      blank.value = ''; blank.textContent = '—';
+      sel.appendChild(blank);
+      options.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.id; opt.textContent = o.label;
+        if (o.id === getValue()) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener('change', e => { e.stopPropagation(); setValue(sel.value); save(); });
+      sel.addEventListener('click', e => e.stopPropagation());
+      wrap.appendChild(lbl); wrap.appendChild(sel);
+      return wrap;
+    };
+
+    // Brother / Sister selector
+    const genderWrap = document.createElement('div');
+    genderWrap.className = 'field';
+    const genderLbl = document.createElement('label');
+    genderLbl.textContent = 'Type';
+    const genderSel = document.createElement('select');
+    genderSel.style.cssText = 'border:none;border-bottom:1px solid transparent;background:transparent;padding:2px 0;font-size:13.5px;color:var(--ink);width:100%;outline:none;font-family:inherit;transition:border-color 0.15s;cursor:pointer;appearance:auto;';
+    genderSel.addEventListener('focus', () => { genderSel.style.borderBottomColor = 'var(--accent)'; });
+    genderSel.addEventListener('blur',  () => { genderSel.style.borderBottomColor = 'transparent'; });
+    [['u','— Select —'],['f','Sister'],['m','Brother'],['family','Family']].forEach(([val,lbl]) => {
+      const opt = document.createElement('option');
+      opt.value = val; opt.textContent = lbl;
+      if ((p.gender||'u') === val) opt.selected = true;
+      genderSel.appendChild(opt);
+    });
+    genderSel.addEventListener('change', e => {
+      e.stopPropagation();
+      p.gender = genderSel.value;
+      saveState();
+      // Re-render covenant path so steps update (e.g. priesthood appears/disappears)
+      const cpContainer = document.getElementById('d-covenant-path');
+      if (cpContainer) renderCovenantPath(p, cpContainer);
+      UI.renderAll();
+    });
+    genderSel.addEventListener('click', e => e.stopPropagation());
+    genderWrap.appendChild(genderLbl);
+    genderWrap.appendChild(genderSel);
+    // genderWrap appended at the end below (bottom-right of the grid)
+
+    g.appendChild(textField('Family / last name', () => p.familyName, v => { if(v) p.familyName = v; }));
+    g.appendChild(textField('First name(s)', () => p.firstNames||'', v => { p.firstNames = v; }));
+    g.appendChild(textField('Submitted by', () => p.submittedBy||'', v => { p.submittedBy = v; }));
+    g.appendChild(dateField('Date submitted', () => p.dateSubmitted||'', v => { p.dateSubmitted = v; }));
+    g.appendChild(selectField('Org steward', ORGS, () => p.orgId||'', v => { p.orgId = v; }));
+    // Bishopric support — dynamic dropdown from council config
+    const bishWrap = document.createElement('div');
+    bishWrap.className = 'field';
+    const bishLbl = document.createElement('label');
+    bishLbl.textContent = 'Bishopric support';
+    const bishopricRoles = ['bishop','counselor1','counselor2'];
+    const bishSel = document.createElement('select');
+    bishSel.style.cssText = 'border:none;border-bottom:1px solid transparent;background:transparent;padding:2px 0;font-size:13.5px;color:var(--ink);width:100%;outline:none;font-family:inherit;transition:border-color 0.15s;cursor:pointer;appearance:auto;';
+    bishSel.addEventListener('focus', () => { bishSel.style.borderBottomColor = 'var(--accent)'; });
+    bishSel.addEventListener('blur',  () => { bishSel.style.borderBottomColor = 'transparent'; });
+    const bishBlank = document.createElement('option');
+    bishBlank.value = ''; bishBlank.textContent = '— Unassigned —';
+    bishSel.appendChild(bishBlank);
+    const cfg = loadCouncil();
+    bishopricRoles.forEach(rid => {
+      const role = COUNCIL_ROLES.find(r => r.id === rid);
+      if (!role) return;
+      const name = (cfg[rid] || '').trim();
+      const opt = document.createElement('option');
+      opt.value = name || role.label;
+      opt.textContent = name ? `${role.label} — ${name}` : role.label;
+      if ((p.bishopricSupport||'') === opt.value) opt.selected = true;
+      bishSel.appendChild(opt);
+    });
+    // Free text option + legacy value
+    const otherOpt = document.createElement('option');
+    otherOpt.value = '__other__'; otherOpt.textContent = 'Other…';
+    bishSel.appendChild(otherOpt);
+    if (p.bishopricSupport && !['', ...bishopricRoles.map(rid => { const n=(cfg[rid]||'').trim(); return n||COUNCIL_ROLES.find(r=>r.id===rid)?.label||''; })].includes(p.bishopricSupport)) {
+      const legacyOpt = document.createElement('option');
+      legacyOpt.value = p.bishopricSupport; legacyOpt.textContent = p.bishopricSupport;
+      legacyOpt.selected = true;
+      bishSel.insertBefore(legacyOpt, otherOpt);
+    }
+    bishSel.addEventListener('change', e => {
+      e.stopPropagation();
+      if (bishSel.value === '__other__') {
+        const val = prompt('Enter name:');
+        if (val && val.trim()) { p.bishopricSupport = val.trim(); save(); }
+        else bishSel.value = p.bishopricSupport || '';
+      } else {
+        p.bishopricSupport = bishSel.value;
+        save();
+      }
+    });
+    bishSel.addEventListener('click', e => e.stopPropagation());
+    bishWrap.appendChild(bishLbl);
+    bishWrap.appendChild(bishSel);
+    g.appendChild(bishWrap);
+    g.appendChild(selectField('Work of Salvation focus', FOCUSES, () => p.focusId||'', v => { p.focusId = v; }));
+
+    // Brother or Sister — sits next to Focus on the right
+    g.appendChild(genderWrap);
+
+    return g;
+  },
+
+  // Stamp is applied automatically on any write — no manual toggle needed
+
+  _promptArchive(pid) {
+    const reason = prompt('Optional reason for archiving (shown in archive list):');
+    if (reason === null) return; // cancelled
+    App.archivePerson(pid, reason);
+  },
+
+  // ─── Add modal ───────────────────────────────────
+
+  openAdd(queueIt) {
+    this.editingId = null;
+    this.addQueueOnCreate = !!queueIt;
+    document.getElementById('add-title').textContent = 'Add individual';
+    document.getElementById('add-save-btn').textContent = queueIt ? 'Add & queue' : 'Add';
+    const orgOpts = ORGS.map(o=>`<option value="${o.id}">${o.label}</option>`).join('');
+    const focusOpts = FOCUSES.map(f=>`<option value="${f.id}">${f.label}</option>`).join('');
+    document.getElementById('add-fields').innerHTML = `
+      <div class="field" style="grid-column:1/-1"><label>Name *</label><input id="nf-name" placeholder="e.g. Sofia Garcia" autofocus></div>
+      <div class="field" id="nf-by-field"><label>Submitted by</label></div>
+      <div class="field"><label>Date submitted</label><input type="date" id="nf-date" value="${todayISO()}"></div>
+      <div class="field"><label>Org steward</label><select id="nf-org"><option value="">— Select —</option>${orgOpts}</select></div>
+      <div class="field"><label>Bishopric support</label><select id="nf-bish"><option value="">— Unassigned —</option>${['bishop','counselor1','counselor2'].map(rid=>{const role=COUNCIL_ROLES.find(r=>r.id===rid);const name=(loadCouncil()[rid]||'').trim();const val=name||role.label;return `<option value="${esc(val)}">${esc(name?role.label+' — '+name:role.label)}</option>`;}).join('')}<option value="__other__">Other…</option></select></div>
+      <div class="field"><label>Work of Salvation focus</label><select id="nf-focus"><option value="">— Select —</option>${focusOpts}</select></div>
+      <div class="field"><label>Type</label><select id="nf-gender"><option value="u">— Select —</option><option value="f">Sister</option><option value="m">Brother</option><option value="family">Family</option></select></div>
+      <div class="field" style="grid-column:1/-1"><label>Initial note / context</label><textarea id="nf-note" placeholder="Why is the council discussing this person?"></textarea></div>`;
+    document.getElementById('modal-add').style.display = 'flex';
+    // Build Submitted By typeahead after innerHTML is rendered
+    const byField = document.getElementById('nf-by-field');
+    if (byField) {
+      const byObj = UI._buildOwnerInput({ placeholder: 'e.g. Sister Lim', initialValue: App.currentUser||'', width: '100%' });
+      byObj.input.id = 'nf-by';
+      byField.appendChild(byObj.wrap);
+    }
+    setTimeout(()=>document.getElementById('nf-name')?.focus(),60);
+  },
+
+  closeAdd() {
+    document.getElementById('modal-add').style.display = 'none';
+  },
+
+  saveAdd() {
+    const fullName = document.getElementById('nf-name')?.value.trim();
+    if (!fullName) { toast('Name is required'); return; }
+    // Split into firstNames + familyName for sorting/avatar compatibility
+    const parts = fullName.split(/\s+/);
+    const familyName = parts.length > 1 ? parts[parts.length - 1] : fullName;
+    const firstNames = parts.length > 1 ? parts.slice(0, -1).join(' ') : '';
+    const id = 'p' + Date.now() + Math.random().toString(36).slice(2,5);
+    const note = document.getElementById('nf-note')?.value.trim();
+    const user = App.currentUser || document.getElementById('nf-by')?.value.trim() || 'Ward Council';
+    const p = {
+      id, familyName, firstNames,
+      submittedBy: document.getElementById('nf-by')?.value.trim()||'',
+      dateSubmitted: document.getElementById('nf-date')?.value||'',
+      orgId:       document.getElementById('nf-org')?.value||'',
+      focusId:     document.getElementById('nf-focus')?.value||'',
+      bishopricSupport: (()=>{ const v=document.getElementById('nf-bish')?.value||''; if(v==='__other__'){return prompt('Enter name:')||'';}return v; })(),
+      gender: document.getElementById('nf-gender')?.value || 'u',
+      covenantPath: [],
+      currentStep: null,
+      status: 'active', archivedAt:null, archiveNote:'',
+      queuedFor: this.addQueueOnCreate ? state.meetingDate : null,
+      lastDiscussed: null,
+      actions: [],
+      history: note ? [{id:'h'+Date.now(),at:new Date().toISOString(),author:user,text:note,actionId:null}] : [],
+    };
+    state.people.push(p);
+    saveState();
+    this.closeAdd();
+    this.renderAll();
+    // Scroll roster to top so new person is findable, not jarring bottom-jump
+    requestAnimationFrame(() => {
+      const scroll = document.getElementById('roster-scroll');
+      if (scroll) scroll.scrollTop = 0;
+    });
+    toast(fullName + ' added to roster');
+  },
+
+  // ─── End meeting modal ────────────────────────────
+
+  openEndMeeting() {
+    const discussed = state.people.filter(p=>p.lastDiscussed===state.meetingDate);
+    document.getElementById('end-sub').textContent = `${fmtDate(state.meetingDate)} · ${discussed.length} individuals discussed`;
+    const body = document.getElementById('end-body');
+
+    // Build report grouped by owner
+    const byOwner = {};
+    discussed.forEach(p => {
+      p.actions.filter(a=>a.open).forEach(a => {
+        const owner = a.owner || 'Unassigned';
+        if (!byOwner[owner]) byOwner[owner] = [];
+        byOwner[owner].push({person:p, action:a});
+      });
+    });
+    const owners = Object.keys(byOwner).sort((a,b)=>a==='Unassigned'?1:b==='Unassigned'?-1:a.localeCompare(b));
+
+    let html = '';
+    if (discussed.length === 0) {
+      html = `<p style="color:var(--ink-3);font-style:italic;">No individuals were updated this meeting yet.</p>`;
+    } else {
+      html += `<div class="report-section"><h3>Discussed today (${discussed.length})</h3>`;
+      discussed.forEach(p => {
+        html += `<div class="report-row"><div class="report-who">${esc(displayName(p))}</div>
+          <div class="report-action" style="color:var(--ink-3);font-style:italic;">${openActionCount(p)} open action${openActionCount(p)!==1?'s':''}</div></div>`;
+      });
+      html += `</div>`;
+
+      if (owners.length > 0) {
+        html += `<div class="report-section"><h3>Open actions by owner</h3>`;
+        owners.forEach(owner => {
+          byOwner[owner].forEach(({person:p, action:a}) => {
+            html += `<div class="report-row">
+              <div class="report-who">${esc(displayName(p))}</div>
+              <div class="report-action">${esc(a.text)}</div>
+              <div class="report-owner">${esc(owner)}</div>
+            </div>`;
+          });
+        });
+        html += `</div>`;
+      }
+
+      const nextDate = nextSundayISO();
+      html += `<div style="margin-top:14px;padding:12px 14px;background:var(--sky);border-radius:8px;font-size:13px;color:var(--ink-2);">
+        <strong>After ending:</strong> Queue will auto-rebuild from open actions for the next meeting (${fmtDate(nextDate)}). 
+        Hand-added names without open actions cleared from queue. Permanent record of who was discussed kept on each card.
+      </div>`;
+    }
+    body.innerHTML = html;
+    document.getElementById('modal-end').style.display = 'flex';
+  },
+
+  closeEndMeeting() {
+    document.getElementById('modal-end').style.display = 'none';
+  },
+
+  confirmEndMeeting() {
+    App.endMeeting();
+    this.closeEndMeeting();
+    toast('Meeting ended — queue rebuilt for next Sunday');
+  },
+
+  // ─── Sync modal ──────────────────────────────────
+
+  _toggleMtgArchive(id) {
+    const body = document.getElementById(id);
+    const idx = id.replace('ma-','');
+    const chev = document.getElementById('mac-'+idx);
+    if (!body) return;
+    body.classList.toggle('open');
+    if (chev) chev.classList.toggle('open');
+  },
+
+  _printMeeting(id) {
+    const body = document.getElementById(id);
+    if (!body) return;
+    const idx = id.replace('ma-','');
+    const m = (state.meetingArchive || [])[parseInt(idx)];
+    if (!m) return;
+    const win = window.open('','_blank');
+    win.document.write(`<!DOCTYPE html><html><head><title>Ward Council — ${fmtDate(m.date)}</title>
+    <style>body{font-family:sans-serif;padding:32px;color:#111;}h1{font-size:18px;margin-bottom:4px;}
+    h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#666;margin:20px 0 6px;}
+    .row{padding:5px 0;border-bottom:1px solid #eee;display:flex;gap:12px;font-size:13px;}
+    .who{font-weight:600;min-width:160px;}.meta{color:#666;}.owner-group{margin-bottom:10px;}
+    .owner-name{font-weight:600;font-size:12px;color:#444;margin-bottom:3px;}</style></head><body>
+    <h1>TOV Ward Council — ${fmtDate(m.date)}</h1>
+    <div style="font-size:12px;color:#888;">Saved ${fmtDate(m.savedAt?.slice(0,10))}</div>
+    <h2>Discussed (${m.discussed.length})</h2>
+    ${m.discussed.map(d=>`<div class="row"><span class="who">${esc(d.name)}</span><span class="meta">${esc(d.org)}${d.focus?' · '+esc(d.focus):''}</span></div>`).join('')}
+    ${m.openActions.length > 0 ? `<h2>Open Actions by Owner</h2>${(() => {
+      const ao = {}; m.openActions.forEach(a=>{if(!ao[a.owner])ao[a.owner]=[];ao[a.owner].push(a);});
+      return Object.keys(ao).sort().map(o=>`<div class="owner-group"><div class="owner-name">${esc(o)}</div>${ao[o].map(a=>`<div class="row"><span class="who">${esc(a.person)}</span><span class="meta">${esc(a.action)}</span></div>`).join('')}</div>`).join('');
+    })()}` : ''}
+    </body></html>`);
+    win.document.close();
+    win.print();
+  },
+
+
+  closeSync() { document.getElementById('modal-sync').style.display = 'none'; },
+
+  // ─── Helpers ─────────────────────────────────────
+
+  _bindCardClicks(container) {
+    container.querySelectorAll('.pcard[data-pid]').forEach(card => {
+      card.addEventListener('click', () => UI.openDetail(card.dataset.pid));
+    });
+  },
+
+  refreshDetail() {
+    if (this.detailId) {
+      const p = personById(this.detailId);
+      if (p) this._renderDetail(p);
+    }
+  },
+};
+
+// ══════════════════════════════════════════════════════
+// APP ACTIONS
+// ══════════════════════════════════════════════════════
+
+const App = {
+  currentUser: localStorage.getItem('ct-user') || '',
+
+  setCurrentUser(v) { this.currentUser = v; localStorage.setItem('ct-user', v); },
+  setMeetingDate(v) { state.meetingDate = v; saveState(); UI.updateBadges(); UI.renderQueue(); },
+
+  // Auto-stamp lastDiscussed on any write during the current meeting
+  markDiscussed(pid) {
+    const p = personById(pid);
+    if (p && p.lastDiscussed !== state.meetingDate) {
+      p.lastDiscussed = state.meetingDate;
+    }
+  },
+
+  addAction(pid, text, owner) {
+    if (!text) { toast('Action text is required'); return; }
+    const p = personById(pid);
+    if (!p) return;
+    this.markDiscussed(pid);
+    const id = 'a' + Date.now() + Math.random().toString(36).slice(2,5);
+    p.actions.push({id, text, owner, open:true,
+      createdAt:new Date().toISOString(),
+      createdMeeting:state.meetingDate,
+      notes:[],
+      closedAt:null, closedBy:'', closedNote:''});
+    // Auto-queue the person for this meeting
+    if (p.queuedFor !== state.meetingDate) p.queuedFor = state.meetingDate;
+    saveState();
+    UI.renderAll();
+    UI.refreshDetail();
+    toast('Action added');
+  },
+
+  addActionNote(pid, aid, text) {
+    if (!text) return;
+    const p = personById(pid);
+    if (!p) return;
+    const a = p.actions.find(x=>x.id===aid);
+    if (!a) return;
+    if (!a.notes) a.notes = [];
+    a.notes.push({
+      id:'an'+Date.now(),
+      at:new Date().toISOString(),
+      author:this.currentUser||'Ward Council',
+      text,
+    });
+    this.markDiscussed(pid);
+    saveState();
+    UI.refreshDetail();
+  },
+
+
+  closeAction(pid, aid, note) {
+    const p = personById(pid);
+    if (!p) return;
+    const a = p.actions.find(x=>x.id===aid);
+    if (!a) return;
+    this.markDiscussed(pid);
+    const user = this.currentUser || 'Ward Council';
+    a.open = false;
+    a.closedAt = new Date().toISOString();
+    a.closedBy = user;
+    a.closedNote = note || '';
+    // Add history entry, including any notes logged against the action
+    p.history.push({
+      id:'h'+Date.now(),
+      at:new Date().toISOString(),
+      author:user,
+      text:`Closed action: ${a.text}`,
+      note: note || '',
+      actionId:aid,
+      actionNotes: (a.notes && a.notes.length) ? [...a.notes] : [],
+    });
+    // If closing this action leaves no open actions remaining, anchor the person
+    // to the current meeting so they stay in the queue until End Meeting rather
+    // than silently sliding into "Added this week".
+    const stillOpen = p.actions.some(x => x.open);
+    if (!stillOpen && p.queuedFor !== state.meetingDate) {
+      p.queuedFor = state.meetingDate;
+    }
+    saveState();
+    UI.renderAll();
+    UI.refreshDetail();
+    toast('Action closed');
+  },
+
+
+  deleteAction(pid, aid) {
+    const p = personById(pid);
+    if (!p) return;
+    p.actions = p.actions.filter(a => a.id !== aid);
+    saveState();
+    UI.renderAll();
+    UI.refreshDetail();
+  },
+
+  deleteNote(pid, hid) {
+    const p = personById(pid);
+    if (!p) return;
+    p.history = p.history.filter(h => h.id !== hid);
+    saveState();
+    UI.renderAll();
+    UI.refreshDetail();
+  },
+
+  addNote(pid, text) {
+    if (!text) { toast('Note cannot be empty'); return; }
+    const p = personById(pid);
+    if (!p) return;
+    this.markDiscussed(pid);
+    p.history.push({
+      id:'h'+Date.now(),
+      at:new Date().toISOString(),
+      author:this.currentUser||'Ward Council',
+      text, actionId:null,
+    });
+    saveState();
+    UI.renderAll();
+    UI.refreshDetail();
+  },
+
+  archivePerson(pid, reason) {
+    const p = personById(pid);
+    if (!p) return;
+    p.status = 'archived';
+    p.archivedAt = todayISO();
+    p.archiveNote = reason || '';
+    p.queuedFor = null;
+    saveState();
+    UI.closeDetail();
+    UI.renderAll();
+    toast(displayName(p) + ' archived');
+  },
+
+  restorePerson(pid) {
+    const p = personById(pid);
+    if (!p) return;
+    p.status = 'active';
+    p.archivedAt = null;
+    saveState();
+    UI.closeDetail();
+    UI.renderAll();
+    toast(displayName(p) + ' restored to roster');
+  },
+
+  deletePerson(pid) {
+    const p = personById(pid);
+    if (!p) return;
+    if (!confirm(`Permanently delete ${displayName(p)}? This cannot be undone.`)) return;
+    state.people = state.people.filter(x=>x.id!==pid);
+    saveState();
+    UI.renderAll();
+    toast(displayName(p) + ' permanently deleted');
+  },
+
+  endMeeting() {
+    const nextDate = nextSundayISO();
+
+    // Capture meeting snapshot before clearing
+    const queue = state.people.filter(p =>
+      p.status === 'active' && (p.queuedFor === state.meetingDate || p.actions.some(a => a.open))
+    );
+    const discussed = queue.filter(p => p.lastDiscussed === state.meetingDate);
+    const openActions = [];
+    queue.forEach(p => {
+      (p.actions || []).filter(a => a.open).forEach(a => {
+        openActions.push({ person: displayName(p), action: a.text, owner: a.owner });
+      });
+    });
+    if (!state.meetingArchive) state.meetingArchive = [];
+    state.meetingArchive.unshift({
+      id: 'm' + Date.now(),
+      date: state.meetingDate,
+      discussed: discussed.map(p => ({ name: displayName(p), org: orgById(p.orgId)?.label || '', focus: focusById(p.focusId)?.label || '' })),
+      openActions,
+      savedAt: new Date().toISOString(),
+    });
+
+    // Clear hand-added queuedFor stamps for people without open actions.
+    state.people.forEach(p => {
+      if (p.status !== 'active') return;
+      if (p.queuedFor === state.meetingDate) p.queuedFor = null;
+    });
+    // Keep lastDiscussed as-is (permanent record), just move the meeting date forward
+    state.meetingDate = nextDate;
+    saveState();
+    UI.renderAll();
+  },
+};
+
+// ══════════════════════════════════════════════════════
+// MOBILE NAV
+// ══════════════════════════════════════════════════════
+
+const MobNav = {
+  current: 'roster',
+
+  isMobile() { return window.innerWidth <= 700; },
+
+  show(panel) {
+    if (!this.isMobile()) return;
+    this.current = panel;
+    const roster = document.querySelector('.split-roster');
+    const queue  = document.querySelector('.split-queue');
+    if (!roster || !queue) return;
+    roster.classList.toggle('mob-hidden', panel !== 'roster');
+    queue.classList.toggle('mob-hidden',  panel !== 'queue');
+    document.getElementById('mob-tab-roster')?.classList.toggle('active', panel === 'roster');
+    document.getElementById('mob-tab-queue')?.classList.toggle('active',  panel === 'queue');
+    const fab = document.getElementById('mob-add-fab');
+    if (fab) fab.style.display = (panel === 'roster') ? 'flex' : 'none';
+  },
+
+  updateBadge() {
+    const count = getQueue().length;
+    const badge = document.getElementById('mob-queue-badge');
+    if (!badge) return;
+    badge.textContent = count;
+    badge.style.display = count > 0 ? 'block' : 'none';
+  },
+
+  init() {
+    if (!this.isMobile()) return;
+    this.show('roster');
+    const board = document.querySelector('.board-split');
+    if (board) board.style.paddingBottom = '3.5rem';
+  },
+};
+
+// ══════════════════════════════════════════════════════
+// ADMIN / COUNCIL CONFIG
+// ══════════════════════════════════════════════════════
+
+const Admin = {
+  open() {
+    this._render();
+    document.getElementById('modal-admin').style.display = 'flex';
+    setTimeout(() => document.getElementById('admin-body').querySelector('input')?.focus(), 60);
+  },
+
+  close() {
+    document.getElementById('modal-admin').style.display = 'none';
+  },
+
+  _render() {
+    const cfg = loadCouncil();
+    const body = document.getElementById('admin-body');
+    body.innerHTML = `
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:14px;line-height:1.5;">
+        Enter the name of each person currently serving in that role. Leave blank to hide from the dropdown.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;" id="council-fields">
+        ${COUNCIL_ROLES.map(r => `
+          <div class="field">
+            <label>${esc(r.label)}</label>
+            <input id="cr-${r.id}" value="${esc(cfg[r.id]||'')}" placeholder="Name…">
+          </div>
+        `).join('')}
+      </div>`;
+  },
+
+  save() {
+    const cfg = {};
+    COUNCIL_ROLES.forEach(r => {
+      cfg[r.id] = (document.getElementById('cr-' + r.id)?.value || '').trim();
+    });
+    saveCouncil(cfg);
+    this.close();
+    toast('Ward council saved');
+    // Refresh detail modal if open so its dropdown reflects new names
+    UI.refreshDetail();
+  },
+};
+
+
+
+const Sync = {
+  url: '', timer: null, lastHash: localStorage.getItem(HASH_KEY)||'',
+  status: 'unconfigured', lastSyncAt: null, lastError: null,
+
+  init() {
+    let cfg = {};
+    try { cfg = JSON.parse(localStorage.getItem(SYNC_CONFIG_KEY)||'{}'); }
+    catch(e) { console.warn('[sync] config corrupt, resetting:', e); localStorage.removeItem(SYNC_CONFIG_KEY); }
+    this.url = cfg.url || '';
+    this.status = this.url ? 'idle' : 'unconfigured';
+    this.updatePill();
+    if (this.url) this.pull();
+    window.addEventListener('online', () => { if (this.status==='offline') this.push(state); });
+  },
+
+  schedule(s) {
+    clearTimeout(this.timer);
+    this.timer = setTimeout(()=>this.push(s), 1200);
+  },
+
+  hash(s) {
+    const {savedAt,...rest} = s;
+    const str = JSON.stringify(rest);
+    let h = 0;
+    for (let c of str) h = (Math.imul(31,h) + c.charCodeAt(0))|0;
+    return h.toString();
+  },
+
+  setUrl(url) {
+    this.url = (url||'').trim();
+    localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify({url:this.url}));
+    this.status = this.url ? 'idle' : 'unconfigured';
+    this.updatePill();
+  },
+
+  async push(s) {
+    if (!this.url) return;
+    const h = this.hash(s);
+    if (h === this.lastHash) return;
+    this.lastHash = h;
+    localStorage.setItem(HASH_KEY, h);
+    this.setStatus('syncing');
+    try {
+      const r = await fetch(this.url, {
+        method:'POST', redirect:'follow',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'save', data:JSON.stringify(s)}),
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error||'save failed');
+      this.lastSyncAt = Date.now();
+      this.setStatus('online');
+    } catch(e) {
+      console.warn('[sync]',e);
+      this.setStatus('offline', e.message);
+    }
+  },
+
+  async pull() {
+    if (!this.url) return null;
+    this.setStatus('syncing');
+    try {
+      const r = await fetch(this.url+'?action=load', {redirect:'follow'});
+      const j = await r.json();
+      if (j.empty) { this.setStatus('online'); return null; }
+      if (!j.ok) throw new Error(j.error);
+      const cloud = typeof j.data==='string' ? JSON.parse(j.data) : j.data;
+      if (!cloud || !cloud.people) { this.setStatus('online'); return null; }
+      const cloudTime = cloud.savedAt||0;
+      const localTime = state.savedAt||0;
+      if (cloudTime > localTime) {
+        // Backfill new fields on any cloud people that lack them
+        (cloud.people || []).forEach(p => {
+          if (!p.covenantPath) p.covenantPath = [];
+          if (!p.gender) p.gender = 'u';
+          if (p.currentStep === undefined) p.currentStep = null;
+        });
+        state = cloud;
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
+        UI.renderAll();
+        toast('Loaded from cloud');
+      }
+      this.lastSyncAt = Date.now();
+      this.setStatus('online');
+      return cloud;
+    } catch(e) {
+      this.setStatus('offline', e.message);
+      return null;
+    }
+  },
+
+  async test(url) {
+    const r = await fetch((url||this.url)+'?action=status', {redirect:'follow'});
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error||'not ok');
+    return j;
+  },
+
+  setStatus(s, err) {
+    this.status = s;
+    this.lastError = err||null;
+    this.updatePill();
+  },
+
+  updatePill() {
+    const pill = document.getElementById('sync-pill');
+    const txt  = document.getElementById('sync-pill-text');
+    if (!pill) return;
+    pill.className = 'sync-pill ' + this.status;
+    if (!this.url)              txt.textContent = 'Connect sheet';
+    else if (this.status==='syncing')  txt.textContent = 'Syncing…';
+    else if (this.status==='online')   txt.textContent = this.lastSyncAt ? 'Saved' : 'Connected';
+    else if (this.status==='offline')  txt.textContent = 'Offline';
+    else                               txt.textContent = 'Connected';
+  },
+
+  renderPanel() {
+    const body = document.getElementById('sync-body');
+    const statusColor = !this.url ? '#aac0d4' : this.status==='online'||this.status==='idle' ? '#4db88a' : this.status==='offline' ? '#e8a050' : '#7ab8e8';
+    const statusText  = !this.url ? 'Not connected' : this.status==='syncing' ? 'Syncing…' : this.status==='online'||this.status==='idle' ? 'Connected' : 'Offline';
+    const gs = APPS_SCRIPT_SOURCE;
+    body.innerHTML = `
+      <div class="sync-status-row">
+        <div class="sync-dot" style="background:${statusColor}"></div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:13.5px;">${statusText}</div>
+          ${this.lastError?`<div style="font-size:11.5px;color:#b03030;margin-top:2px;">${esc(this.lastError)}</div>`:''}
+          ${this.url?`<div style="font-size:11px;color:var(--ink-3);font-family:monospace;margin-top:2px;word-break:break-all;">${esc(this.url.length>60?this.url.slice(0,60)+'…':this.url)}</div>`:''}
+        </div>
+      </div>
+      <div style="margin-bottom:8px;">
+        <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);display:block;margin-bottom:5px;">${this.url?'Update URL:':'Paste Web App URL:'}</label>
+        <input id="sync-url-input" value="${esc(this.url)}" placeholder="https://script.google.com/macros/s/…"
+          style="width:100%;border:1px solid var(--line-2);border-radius:6px;padding:7px 9px;font-size:13px;background:#fafbfd;outline:none;margin-bottom:8px;">
+        <button class="btn primary" style="width:100%;justify-content:center;" onclick="Sync._connect()">
+          ${this.url?'Update URL':'+ Connect to Google Sheets'}
+        </button>
+      </div>
+      ${this.url?`<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;">
+        <button class="btn sm" onclick="Sync.push(state).then(()=>toast('Pushed to cloud'))">↑ Push now</button>
+        <button class="btn sm" onclick="Sync.pull().then(()=>Sync.renderPanel())">↓ Pull latest</button>
+        <button class="btn sm danger" onclick="Sync._disconnect()">Disconnect</button>
+      </div>`:''}
+      ${!this.url?`<div style="margin-top:14px;padding:12px 14px;background:#fdf6e3;border:1px solid rgba(122,96,16,.20);border-radius:8px;font-size:12.5px;color:#7a6010;line-height:1.6;">
+        <strong style="color:#5a4010;">Setup (3 steps):</strong>
+        <ol style="padding-left:18px;margin:6px 0 10px;">
+          <li>Open <a href="https://script.google.com" target="_blank" style="color:var(--accent)">script.google.com</a> → New project</li>
+          <li>Replace all code with the script below → Save → Deploy → New deployment → Web App → Execute as <em>Me</em> → Access <em>Anyone</em> → Deploy</li>
+          <li>Copy the Web App URL, paste above, click Connect</li>
+        </ol>
+        <div style="border:1px solid var(--line-2);border-radius:7px;overflow:hidden;background:var(--surface);">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line);background:var(--surface-2);">
+            <span style="font-family:monospace;font-size:11px;color:var(--ink-3);">Code.gs</span>
+            <button class="btn sm" onclick="navigator.clipboard.writeText(APPS_SCRIPT_SOURCE).then(()=>toast('Copied!'))">Copy</button>
+          </div>
+          <pre style="margin:0;padding:10px 14px;font-family:monospace;font-size:11px;color:var(--ink-2);overflow:auto;max-height:200px;white-space:pre;tab-size:2;">${esc(gs)}</pre>
+        </div>
+      </div>`:''}
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);margin-bottom:8px;">Local JSON backup</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn sm" onclick="Sync._exportJSON()">↓ Export JSON</button>
+          <button class="btn sm" onclick="document.getElementById('json-import').click()">↑ Import JSON</button>
+          <input id="json-import" type="file" accept=".json" style="display:none" onchange="Sync._importJSON(this)">
+        </div>
+      </div>`;
+  },
+
+  async _connect() {
+    const url = document.getElementById('sync-url-input')?.value.trim();
+    if (!url) { toast('Please paste a URL'); return; }
+    const btn = document.querySelector('#modal-sync .btn.primary');
+    if (btn) { btn.textContent='Testing…'; btn.disabled=true; }
+    try {
+      const ping = await this.test(url);
+      const ver = ping.version ? ` (v${ping.version})` : '';
+      this.setUrl(url);
+      const cloud = await this.pull();
+      toast(cloud ? `Connected${ver} — loaded from cloud` : `Connected${ver} — board saved to cloud`);
+      if (!cloud) await this.push(state);
+      this.renderPanel();
+    } catch(e) {
+      toast('Could not connect: '+e.message);
+      if (btn) { btn.textContent='+ Connect to Google Sheets'; btn.disabled=false; }
+    }
+  },
+
+  _disconnect() {
+    if (!confirm('Disconnect Google Sheets? Data stays local.')) return;
+    this.setUrl('');
+    this.lastHash = '';
+    localStorage.removeItem(HASH_KEY);
+    this.renderPanel();
+    toast('Disconnected');
+  },
+
+  _exportJSON() {
+    const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'council-together-'+todayISO()+'.json';
+    a.click();
+  },
+
+  _importJSON(input) {
+    const f = input.files?.[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = e => {
+      try {
+        const d = JSON.parse(e.target.result);
+        if (!d.people) { toast('Not a valid Council Together export'); return; }
+        if (!confirm(`Import ${d.people.length} individuals? Replaces current data.`)) return;
+        // Backfill new fields on imported people
+        (d.people || []).forEach(p => {
+          if (!p.covenantPath) p.covenantPath = [];
+          if (!p.gender) p.gender = 'u';
+          if (p.currentStep === undefined) p.currentStep = null;
+        });
+        state = d;
+        saveState();
+        UI.renderAll();
+        UI.closeSync();
+        toast('Imported successfully');
+      } catch(err) { toast('Could not parse file'); }
+    };
+    r.readAsText(f);
+  },
+};
+
+// ══════════════════════════════════════════════════════
+// APPS SCRIPT SOURCE
+// ══════════════════════════════════════════════════════
+
+const APPS_SCRIPT_SOURCE = `/**
+ * Council Together — Google Apps Script backend (v8)
+ * Stores entire app state as chunked JSON in PropertiesService.
+ */
+const CHUNK = 4000;
+const KEY_META   = 'data_meta';
+const KEY_PREFIX = 'data_';
+const KEY_BK_META= 'backup_meta';
+const KEY_BK_PFX = 'backup_';
+
+function doGet(e) {
+  return respond_(function() {
+    const action = (e.parameter && e.parameter.action) || 'load';
+    if (action === 'status')      return { status:'alive', version:8 };
+    if (action === 'loadbackup')  return loadBackup_();
+    return { data: readBlob_(KEY_META, KEY_PREFIX) };
+  });
+}
+
+function doPost(e) {
+  return respond_(function() {
+    const body   = JSON.parse(e.postData.contents);
+    const action = body.action || 'save';
+    const lock   = LockService.getScriptLock();
+    lock.waitLock(15000);
+    try {
+      if (action === 'save')       return saveBlob_(body.data, KEY_META, KEY_PREFIX);
+      if (action === 'backup')     return saveBlob_(body.data, KEY_BK_META, KEY_BK_PFX, true);
+      if (action === 'loadbackup') return loadBackup_();
+      throw new Error('Unknown action: ' + action);
+    } finally { lock.releaseLock(); }
+  });
+}
+
+function respond_(fn) {
+  try {
+    const r = fn();
+    return ContentService
+      .createTextOutput(JSON.stringify(Object.assign({ ok:true }, r)))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok:false, error:String(err&&err.message||err) }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function saveBlob_(data, metaKey, prefix, isBackup) {
+  if (!data) throw new Error('No data');
+  const str    = typeof data === 'string' ? data : JSON.stringify(data);
+  const props  = PropertiesService.getScriptProperties();
+  const count  = Math.ceil(str.length / CHUNK);
+  const oldMeta= JSON.parse(props.getProperty(metaKey)||'{}');
+  for (var i = (oldMeta.chunks||0)-1; i >= count; i--) props.deleteProperty(prefix+i);
+  for (var i = 0; i < count; i++)
+    props.setProperty(prefix+i, str.slice(i*CHUNK, (i+1)*CHUNK));
+  const savedAt= new Date().toISOString();
+  props.setProperty(metaKey, JSON.stringify({chunks:count,length:str.length,savedAt}));
+  const verify = assembleData_(props, prefix, count);
+  if (verify !== str) throw new Error('Verify failed at char '+findDiff_(str,verify));
+  return { chunks:count, length:str.length, verified:true,
+    stamp: isBackup ? savedAt : undefined };
+}
+
+function readBlob_(metaKey, prefix) {
+  const props = PropertiesService.getScriptProperties();
+  const meta  = JSON.parse(props.getProperty(metaKey)||'{}');
+  if (!meta.chunks) return null;
+  return assembleData_(props, prefix, meta.chunks);
+}
+
+function assembleData_(props, prefix, count) {
+  var out = '';
+  for (var i = 0; i < count; i++)
+    out += (props.getProperty(prefix+i)||'').replace(/[\\r\\n]/g,'');
+  return out;
+}
+
+function loadBackup_() {
+  const data = readBlob_(KEY_BK_META, KEY_BK_PFX);
+  if (!data) return { empty:true };
+  const meta = JSON.parse(PropertiesService.getScriptProperties().getProperty(KEY_BK_META)||'{}');
+  return { data, stamp: meta.savedAt||'' };
+}
+
+function findDiff_(a, b) {
+  for (var i = 0; i < Math.max(a.length, b.length); i++)
+    if (a[i] !== b[i]) return i;
+  return -1;
+}`;
+
+// ══════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+let toastTimer;
+function toast(msg) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  clearTimeout(toastTimer);
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  toastTimer = setTimeout(()=>el.remove(), 2800);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('modal-detail').classList.contains('open')) UI.closeDetail();
+    else if (document.getElementById('modal-add').style.display === 'flex') UI.closeAdd();
+    else if (document.getElementById('modal-admin').style.display === 'flex') Admin.close();
+    else if (document.getElementById('modal-end').style.display === 'flex') UI.closeEndMeeting();
+    else if (document.getElementById('modal-sync').style.display === 'flex') UI.closeSync();
+  }
+});
+
+// ── Boot ──
+UI.init();
+MobNav.init();
+</script>
+</body>
+</html>
