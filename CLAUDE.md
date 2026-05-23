@@ -36,7 +36,7 @@ let state = {
   savedAt: null,               // timestamp, used for cloud sync conflict resolution
   people: [...],               // all individuals & families (active + archived)
   meetingArchive: [...],       // past meeting snapshots saved at End Meeting
-  council: {...},              // ward council member names, keyed by role id
+  council: {...},              // ward council, keyed by role id → { name, email }
 }
 ```
 
@@ -92,8 +92,11 @@ State is persisted to `localStorage` under key `ct-v5` and synced to Google Shee
 - `getHandAdded()` — queue filtered to those without open actions ("Discussion" section)
 - `getRoster()` — all active people
 - `displayName(p)` — "Sofia Garcia" format (firstNames + familyName)
-- `councilOptions()` — returns configured council members for typeahead dropdowns
-- `loadCouncil()` / `saveCouncil()` — reads/writes council config; council is stored in `state.council` so it syncs
+- `councilOptions()` — returns configured council members for typeahead dropdowns — each entry: `{ id, label, name, email, display, noName }`
+- `loadCouncil()` / `saveCouncil()` — reads/writes council config; council is stored in `state.council` so it syncs. `loadCouncil()` auto-migrates the legacy string shape (`{ bishop: 'John' }`) to the current object shape (`{ bishop: { name: 'John', email: '' } }`) on read
+- `getReportRecipients()` — collects every council role's `email` (filters blanks) — used by the after-meeting email send
+- `UI._sendMeetingReport()` — collects discussed people + open-action owners, builds inline-styled HTML via `_buildReportEmailHTML(date, records, ao)`, and POSTs to the Apps Script `sendReport` endpoint
+- `UI._buildReportEmailHTML(date, records, ao)` — produces self-contained HTML email (table-based layout, inline styles only — no external CSS, since email clients strip it)
 
 ---
 
@@ -143,10 +146,12 @@ Three-state click: unchecked → completed (white) → current (green) → unche
 
 ## Google Sheets sync
 
-**Protocol:** v8 (chunked PropertiesService, 4000 chars/chunk, write-verify)  
+**Protocol:** v9 (chunked PropertiesService, 4000 chars/chunk, write-verify; adds `sendReport` for after-meeting email)  
 **Apps Script URL:** hardcoded as default in `Sync.init()` — new browsers auto-connect  
 **Push:** `POST {action:'save', data: JSON.stringify(state)}`  
 **Pull:** `GET ?action=load` → returns `{ok:true, data: '...json string...'}`  
+**Backup:** `POST {action:'backup', data: ...}` → snapshots into `backup_*` properties  
+**Send report:** `POST {action:'sendReport', subject, html, recipients:[email,...]}` → fan-outs to `MailApp.sendEmail()`. Requires re-authorising the Apps Script the first time (adds the Gmail send scope).  
 **Conflict resolution:** `savedAt` timestamp — cloud wins if newer  
 **Debounce:** 1200ms after any state change
 
@@ -199,6 +204,6 @@ Breakpoint: `≤700px`
 - **`displayName(p)`** — always use this for rendering names, never concatenate `familyName` + `firstNames` directly
 - **`lastDiscussed`** is stamped by `App.markDiscussed(pid)` on any write (note, action, action close) — stewardship field edits do NOT stamp it
 - **`queuedFor`** — when the last open action on a person is closed mid-meeting, it gets stamped to `state.meetingDate` so they stay in the queue until End Meeting
-- **Council config** lives in `state.council` (syncs) AND `localStorage['ct-v5-council']` (backup). `loadCouncil()` prefers `state.council`; `saveCouncil()` writes both
+- **Council config** lives in `state.council` (syncs) AND `localStorage['ct-v5-council']` (backup). `loadCouncil()` prefers `state.council`; `saveCouncil()` writes both. Each entry is `{ name, email }` — older string-valued entries are migrated to this shape lazily on read
 - **Meeting date** is always auto-corrected to `currentSundayISO()` on `UI.init()` — never stale
 - **`bishopricSupport`** stores the name string (e.g. `"John Smith"`) not the role label. The dropdown shows `"John Smith — Bishop"` but the stored value is just the name. The print report strips role prefixes with `.replace(/^[^—]+—\s*/, '')`

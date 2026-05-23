@@ -727,7 +727,8 @@ button{cursor:pointer;}
   <div class="modal-body" style="padding:16px 20px;" id="end-body"></div>
   <div class="modal-foot">
     <button class="btn sm" onclick="UI.closeEndMeeting()">Cancel</button>
-    <div style="display:flex;gap:7px;">
+    <div style="display:flex;gap:7px;flex-wrap:wrap;">
+      <button class="btn sm" onclick="UI._sendMeetingReport()">✉ Send report</button>
       <button class="btn sm" onclick="UI._printCurrentMeeting()">🖨 Print report</button>
       <button class="btn sm primary green" onclick="UI.confirmEndMeeting()">✓ End meeting &amp; roll to next</button>
     </div>
@@ -753,7 +754,7 @@ button{cursor:pointer;}
 </div>
 
 <!-- ── Admin / Council modal ── -->
-<div class="modal modal-sm" id="modal-admin" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:none;z-index:300;box-shadow:0 8px 48px rgba(0,0,0,.28);border-radius:12px;overflow:hidden;flex-direction:column;">
+<div class="modal" id="modal-admin" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:none;z-index:300;box-shadow:0 8px 48px rgba(0,0,0,.28);border-radius:12px;overflow:hidden;flex-direction:column;width:min(680px,94vw);max-height:90vh;">
   <button class="icon-btn modal-close" onclick="Admin.close()" style="position:absolute;top:12px;right:12px;z-index:2;">✕</button>
   <div class="modal-head">
     <div>
@@ -761,7 +762,7 @@ button{cursor:pointer;}
 
     </div>
   </div>
-  <div class="modal-body" style="padding:16px 20px;" id="admin-body"></div>
+  <div class="modal-body" style="padding:16px 20px;overflow-y:auto;" id="admin-body"></div>
   <div class="modal-foot">
     <button class="btn sm" onclick="Admin.close()">Cancel</button>
     <button class="btn sm primary" onclick="Admin.save()">Save</button>
@@ -886,37 +887,55 @@ const COUNCIL_ROLES = [
   {id:'elders',      label:'Elders'},
 ];
 
+// Returns a normalised council config: { [roleId]: { name, email } }.
+// Migrates from the older string-valued shape ({ bishop: 'John Smith' }) on read.
 function loadCouncil() {
-  // Prefer council config stored in state (syncs across devices)
-  if (state && state.council) return state.council;
-  try {
-    const raw = localStorage.getItem(COUNCIL_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch(e) {}
+  let raw = null;
+  if (state && state.council) raw = state.council;
+  else {
+    try { raw = JSON.parse(localStorage.getItem(COUNCIL_KEY)); } catch(e) {}
+  }
   const cfg = {};
-  COUNCIL_ROLES.forEach(r => { cfg[r.id] = ''; });
+  COUNCIL_ROLES.forEach(r => {
+    const val = raw && raw[r.id];
+    if (!val) cfg[r.id] = { name: '', email: '' };
+    else if (typeof val === 'string') cfg[r.id] = { name: val, email: '' };
+    else cfg[r.id] = { name: (val.name || '').trim(), email: (val.email || '').trim() };
+  });
   return cfg;
 }
 
 function saveCouncil(cfg) {
-  // Save into state so it syncs, plus localStorage as backup
-  if (typeof state !== 'undefined') { state.council = cfg; saveState(); }
-  localStorage.setItem(COUNCIL_KEY, JSON.stringify(cfg));
+  // Always persist in the normalised {name, email} shape
+  const norm = {};
+  COUNCIL_ROLES.forEach(r => {
+    const v = cfg[r.id] || {};
+    norm[r.id] = { name: (v.name || '').trim(), email: (v.email || '').trim() };
+  });
+  if (typeof state !== 'undefined') { state.council = norm; saveState(); }
+  localStorage.setItem(COUNCIL_KEY, JSON.stringify(norm));
 }
 
-// Returns [{id, label, name, display}] — options for the bishopric support dropdown
+// Returns [{id, label, name, email, display}] — options for typeaheads and dropdowns
 function councilOptions() {
   const cfg = loadCouncil();
   return COUNCIL_ROLES.map(r => {
-    const name = (cfg[r.id] || '').trim();
+    const entry = cfg[r.id] || {};
+    const name = (entry.name || '').trim();
+    const email = (entry.email || '').trim();
     return {
       id: r.id,
       label: r.label,
       name,
+      email,
       display: name ? `${r.label} — ${name}` : r.label,
       noName: !name,
     };
   });
+}
+
+function getReportRecipients() {
+  return councilOptions().filter(o => o.email).map(o => o.email);
 }
 
 function defaultState() {
@@ -2172,7 +2191,7 @@ const UI = {
     bishopricRoles.forEach(rid => {
       const role = COUNCIL_ROLES.find(r => r.id === rid);
       if (!role) return;
-      const name = (cfg[rid] || '').trim();
+      const name = (cfg[rid]?.name || '').trim();
       const opt = document.createElement('option');
       opt.value = name || role.label;
       opt.textContent = name ? `${name} — ${role.label}` : role.label;
@@ -2183,7 +2202,7 @@ const UI = {
     const otherOpt = document.createElement('option');
     otherOpt.value = '__other__'; otherOpt.textContent = 'Other…';
     bishSel.appendChild(otherOpt);
-    if (p.bishopricSupport && !['', ...bishopricRoles.map(rid => { const n=(cfg[rid]||'').trim(); return n||COUNCIL_ROLES.find(r=>r.id===rid)?.label||''; })].includes(p.bishopricSupport)) {
+    if (p.bishopricSupport && !['', ...bishopricRoles.map(rid => { const n=(cfg[rid]?.name||'').trim(); return n||COUNCIL_ROLES.find(r=>r.id===rid)?.label||''; })].includes(p.bishopricSupport)) {
       const legacyOpt = document.createElement('option');
       legacyOpt.value = p.bishopricSupport; legacyOpt.textContent = p.bishopricSupport;
       legacyOpt.selected = true;
@@ -2245,7 +2264,7 @@ const UI = {
       <div class="field" id="nf-by-field"><label>Submitted by</label></div>
       <div class="field"><label>Date submitted</label><input type="date" id="nf-date" value="${todayISO()}"></div>
       <div class="field" style="grid-column:1/-1"><label>Org steward(s)</label><div id="nf-org-chips" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;">${ORGS.map(o=>`<button type="button" data-orgid="${o.id}" onclick="UI._toggleOrgChip(this,'${o.id}')" style="font-size:11.5px;padding:3px 10px;border-radius:99px;cursor:pointer;border:1px solid var(--line-2);background:var(--surface);color:var(--ink-3);font-weight:400;">${o.label}</button>`).join('')}</div></div>
-      <div class="field"><label>Bishopric support</label><select id="nf-bish"><option value="">— Unassigned —</option>${['bishop','counselor1','counselor2'].map(rid=>{const role=COUNCIL_ROLES.find(r=>r.id===rid);const name=(loadCouncil()[rid]||'').trim();const val=name||role.label;return `<option value="${esc(val)}">${esc(name?name+' — '+role.label:role.label)}</option>`;}).join('')}<option value="__other__">Other…</option></select></div>
+      <div class="field"><label>Bishopric support</label><select id="nf-bish"><option value="">— Unassigned —</option>${['bishop','counselor1','counselor2'].map(rid=>{const role=COUNCIL_ROLES.find(r=>r.id===rid);const name=(loadCouncil()[rid]?.name||'').trim();const val=name||role.label;return `<option value="${esc(val)}">${esc(name?name+' — '+role.label:role.label)}</option>`;}).join('')}<option value="__other__">Other…</option></select></div>
       <div class="field"><label>Work of Salvation focus</label><select id="nf-focus"><option value="">— Select —</option>${focusOpts}</select></div>
       <div class="field"><label>Type</label><select id="nf-gender"><option value="u">— Select —</option><option value="f">Sister</option><option value="m">Brother</option><option value="family">Family</option></select></div>
       <div class="field" style="grid-column:1/-1"><label>Initial note / context</label><textarea id="nf-note" placeholder="Why is the council discussing this person?"></textarea></div>`;
@@ -2516,6 +2535,131 @@ ${Object.keys(ao).length ? `<div class="summary">
     if (!body) return;
     body.classList.toggle('open');
     if (chev) chev.classList.toggle('open');
+  },
+
+  // ─── After-meeting email report ─────────────────
+
+  _buildReportEmailHTML(date, records, ao) {
+    const ownerList = Object.keys(ao).sort();
+    const dateStr = fmtDate(date);
+    return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f7fa;font-family:Georgia,serif;color:#111;">
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f5f7fa;padding:24px 12px;">
+  <tr><td align="center">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="640" style="max-width:640px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e2e8ef;">
+      <tr><td style="background:#0c3a6b;color:#ffffff;padding:18px 24px;">
+        <div style="font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.7);">TOV Ward Council</div>
+        <div style="font-size:20px;font-weight:700;margin-top:4px;">${esc(dateStr)}</div>
+      </td></tr>
+      <tr><td style="padding:20px 24px;">
+        <div style="font-size:14px;color:#444;margin-bottom:18px;line-height:1.5;">
+          Summary of the ${esc(dateStr)} ward council meeting. ${records.length} individual${records.length===1?'':'s'} discussed.
+        </div>
+        ${records.length === 0 ? `<div style="padding:20px;border:1px dashed #cbd5e0;border-radius:6px;text-align:center;color:#718096;font-style:italic;">No individuals were discussed in this meeting.</div>` : records.map(r => `
+        <div style="border:1px solid #e2e8ef;border-radius:6px;margin-bottom:14px;overflow:hidden;">
+          <div style="background:#0c3a6b;color:#ffffff;padding:8px 14px;">
+            <div style="font-size:15px;font-weight:700;">${esc(r.name)}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.75);margin-top:2px;">
+              ${esc(r.org)}${r.focus?' · '+esc(r.focus):''}${r.bishopricSupport?' · Support: '+esc(r.bishopricSupport):''}
+            </div>
+          </div>
+          <div style="padding:10px 14px;font-size:13px;color:#1a202c;">
+            ${r.notes.length ? `
+              <div style="margin-bottom:10px;">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#718096;margin-bottom:5px;">Discussion Notes</div>
+                ${r.notes.map(n => `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0;">${esc(n.text)}<div style="font-size:10px;color:#a0aec0;margin-top:1px;">— ${esc(n.author)}</div></div>`).join('')}
+              </div>` : ''}
+            ${r.openActions.length ? `
+              <div style="margin-bottom:10px;">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#718096;margin-bottom:5px;">Open Actions</div>
+                ${r.openActions.map(a => `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0;">☐ ${esc(a.text)} <span style="font-size:11px;color:#718096;">— ${esc(a.owner)}</span></div>`).join('')}
+              </div>` : ''}
+            ${r.closedToday.length ? `
+              <div>
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#718096;margin-bottom:5px;">Completed Today</div>
+                ${r.closedToday.map(a => `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0;">☑ <span style="text-decoration:line-through;color:#718096;">${esc(a.text)}</span> <span style="font-size:11px;color:#718096;">— ${esc(a.owner)}</span>${a.closedNote?`<div style="font-size:11px;color:#4a5568;font-style:italic;margin-top:2px;">"${esc(a.closedNote)}"</div>`:''}</div>`).join('')}
+              </div>` : ''}
+            ${!r.notes.length && !r.openActions.length && !r.closedToday.length ? `<div style="color:#a0aec0;font-style:italic;">No notes or actions recorded.</div>` : ''}
+          </div>
+        </div>`).join('')}
+
+        ${ownerList.length ? `
+        <div style="margin-top:24px;border:1px solid #e2e8ef;border-radius:6px;overflow:hidden;">
+          <div style="background:#edf2f7;padding:8px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#2d4a6a;">Open Actions by Owner</div>
+          <div style="padding:10px 14px;font-size:13px;">
+            ${ownerList.map(owner => `
+              <div style="margin-bottom:10px;">
+                <div style="font-weight:700;color:#0c3a6b;margin-bottom:3px;">${esc(owner)}</div>
+                ${ao[owner].map(a => `<div style="padding:3px 0 3px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;">☐ ${esc(a.person)} — ${esc(a.action)}</div>`).join('')}
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
+      </td></tr>
+      <tr><td style="background:#f8fafc;border-top:1px solid #e2e8ef;padding:12px 24px;font-size:11px;color:#a0aec0;text-align:center;">
+        Sent from TOV Work of Salvation
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+  },
+
+  _sendMeetingReport() {
+    if (!Sync.url) {
+      toast('Connect to Google Sheet first (sync panel)');
+      return;
+    }
+    const recipients = getReportRecipients();
+    if (!recipients.length) {
+      toast('No email addresses configured — add them in the Council panel');
+      return;
+    }
+
+    const date = state.meetingDate;
+    const queue = state.people.filter(p =>
+      p.status === 'active' && (p.queuedFor === date || p.actions.some(a => a.open))
+    );
+    const discussed = queue.filter(p => p.lastDiscussed === date);
+    const records = discussed.map(p => {
+      const todayNotes = (p.history || []).filter(h =>
+        !h.actionId && h.at && h.at.slice(0,10) === date
+      );
+      const openActs   = (p.actions || []).filter(a => a.open);
+      const closedToday = (p.actions || []).filter(a =>
+        !a.open && a.closedAt && a.closedAt.slice(0,10) === date
+      );
+      return {
+        name: displayName(p),
+        org: orgLabels(p),
+        focus: focusById(p.focusId)?.label || '',
+        bishopricSupport: p.bishopricSupport || '',
+        notes: todayNotes.map(n => ({ text: n.text, author: n.author })),
+        openActions: openActs.map(a => ({ text: a.text, owner: a.owner })),
+        closedToday: closedToday.map(a => ({ text: a.text, owner: a.owner, closedNote: a.closedNote || '' })),
+      };
+    });
+    const ao = {};
+    queue.forEach(p => {
+      (p.actions || []).filter(a => a.open).forEach(a => {
+        if (!ao[a.owner]) ao[a.owner] = [];
+        ao[a.owner].push({ person: displayName(p), action: a.text });
+      });
+    });
+
+    const html = UI._buildReportEmailHTML(date, records, ao);
+    const subject = `TOV Ward Council — ${fmtDate(date)}`;
+
+    toast('Sending report…');
+    fetch(Sync.url, {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'sendReport', subject, html, recipients }),
+    })
+      .then(r => r.json())
+      .then(j => {
+        if (j.ok) toast(`Report sent to ${j.sent} recipient${j.sent !== 1 ? 's' : ''}`);
+        else toast('Send failed: ' + (j.error || (j.errors && j.errors[0]) || 'unknown'));
+      })
+      .catch(e => toast('Send failed: ' + e.message));
   },
 
   _printMeeting(id) {
@@ -2857,22 +3001,30 @@ const Admin = {
     const body = document.getElementById('admin-body');
     body.innerHTML = `
       <div style="font-size:12px;color:var(--ink-3);margin-bottom:14px;line-height:1.5;">
-        Enter the name of each person currently serving in that role. Leave blank to hide from the dropdown.
+        Enter the name of each person currently serving in that role. Add an email to receive the after-meeting report. Leave blank to hide from the dropdown.
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;" id="council-fields">
-        ${COUNCIL_ROLES.map(r => `
-          <div class="field">
-            <label>${esc(r.label)}</label>
-            <input id="cr-${r.id}" value="${esc(cfg[r.id]||'')}" placeholder="Name…">
-          </div>
-        `).join('')}
+      <div style="display:grid;grid-template-columns:140px 1fr 1fr;gap:8px 12px;align-items:center;" id="council-fields">
+        <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;">Role</div>
+        <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;">Name</div>
+        <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;">Email</div>
+        ${COUNCIL_ROLES.map(r => {
+          const entry = cfg[r.id] || {};
+          return `
+          <label style="font-size:13px;color:var(--ink-2);">${esc(r.label)}</label>
+          <input id="cr-name-${r.id}" value="${esc(entry.name||'')}" placeholder="Name…" style="padding:6px 9px;font-size:13px;border:1px solid var(--line-2);border-radius:6px;">
+          <input id="cr-email-${r.id}" value="${esc(entry.email||'')}" placeholder="email@example.com" type="email" style="padding:6px 9px;font-size:13px;border:1px solid var(--line-2);border-radius:6px;">
+          `;
+        }).join('')}
       </div>`;
   },
 
   save() {
     const cfg = {};
     COUNCIL_ROLES.forEach(r => {
-      cfg[r.id] = (document.getElementById('cr-' + r.id)?.value || '').trim();
+      cfg[r.id] = {
+        name:  (document.getElementById('cr-name-'  + r.id)?.value || '').trim(),
+        email: (document.getElementById('cr-email-' + r.id)?.value || '').trim(),
+      };
     });
     saveCouncil(cfg);
     this.close();
@@ -3157,11 +3309,14 @@ const Sync = {
 // ══════════════════════════════════════════════════════
 
 const APPS_SCRIPT_SOURCE = `/**
- * Ward Org Chart — Google Apps Script cloud sync backend (v8)
+ * Ward Org Chart — Google Apps Script cloud sync backend (v9)
  *
  * Deploy: Extensions → Apps Script → paste → Deploy → New deployment
  *   - Type: Web app,  Execute as: Me,  Who has access: Anyone
  * After ANY change: Deploy → Manage deployments → edit → New version → Deploy.
+ *
+ * v9: Adds sendReport action (MailApp.sendEmail). After redeploying you will
+ * be asked to re-authorize — accept the Gmail send scope.
  *
  * v8 fixes:
  *   - Chunk size reduced from 9000 → 4000 chars. PropertiesService silently
@@ -3189,8 +3344,9 @@ function doPost(e) {
   try {
     var body = (e && e.postData && e.postData.contents)
       ? JSON.parse(e.postData.contents) : {};
-    if (body.action === 'save')   return handleSave(body);
-    if (body.action === 'backup') return handleBackup(body);
+    if (body.action === 'save')       return handleSave(body);
+    if (body.action === 'backup')     return handleBackup(body);
+    if (body.action === 'sendReport') return handleSendReport(body);
     return json({ ok: false, error: 'Unknown POST action: ' + body.action });
   } catch (err) { return json({ ok: false, error: String(err) }); }
 }
@@ -3287,6 +3443,31 @@ function assembleData(props) {
     out += c.replace(/[\r\n]/g, '');
   }
   return out;
+}
+
+function handleSendReport(body) {
+  var recipients = body.recipients || [];
+  var subject = body.subject || 'TOV Ward Council Report';
+  var html = body.html || '';
+
+  if (!recipients.length) return json({ ok: false, error: 'No recipients' });
+  if (!html) return json({ ok: false, error: 'No report content' });
+
+  var errors = [];
+  recipients.forEach(function(email) {
+    try {
+      MailApp.sendEmail({
+        to: email,
+        subject: subject,
+        htmlBody: html,
+      });
+    } catch(e) {
+      errors.push(email + ': ' + String(e));
+    }
+  });
+
+  if (errors.length) return json({ ok: false, errors: errors });
+  return json({ ok: true, sent: recipients.length });
 }
 
 function clearDataChunks(props) {
