@@ -141,20 +141,26 @@ button{cursor:pointer;}
   font-style:italic;border:1px dashed var(--line-2);border-radius:var(--r);margin:8px 4px;}
 
 /* ── Meeting notes section ── */
-.mn-add-row{display:flex;gap:6px;margin:6px 4px 8px;}
-.mn-add-row input{flex:1;padding:7px 10px;font-size:13px;border:1px solid var(--line-2);
-  border-radius:6px;outline:none;background:var(--surface);}
-.mn-add-row input:focus{border-color:var(--accent);}
-.mn-add-row button{padding:0 12px;height:32px;border-radius:6px;border:1px solid var(--accent);
+.mn-add-row{display:flex;gap:6px;margin:6px 4px 3px;align-items:flex-start;}
+.mn-add-row textarea{flex:1;padding:7px 10px;font-size:13px;border:1px solid var(--line-2);
+  border-radius:6px;outline:none;background:var(--surface);resize:none;min-height:34px;
+  line-height:1.4;font-family:inherit;overflow:hidden;}
+.mn-add-row textarea:focus{border-color:var(--accent);}
+.mn-add-row button{padding:0 12px;height:34px;border-radius:6px;border:1px solid var(--accent);
   background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0;}
+.mn-hint{font-size:10px;color:var(--ink-4);margin:2px 4px 8px;line-height:1.5;}
+.mn-hint code{background:var(--bg);border:1px solid var(--line);border-radius:3px;padding:0 3px;font-size:9px;font-family:monospace;}
 .mn-item{display:flex;align-items:flex-start;gap:8px;padding:7px 4px;
   border-bottom:1px solid var(--line);font-size:13px;color:var(--ink);}
 .mn-item:last-child{border-bottom:none;}
 .mn-item-text{flex:1;line-height:1.4;cursor:pointer;}
 .mn-item-text:hover{color:var(--accent);}
-.mn-edit-row{display:flex;gap:6px;flex:1;}
-.mn-edit-row input{flex:1;padding:5px 8px;font-size:13px;border:1px solid var(--accent);
-  border-radius:5px;outline:none;background:var(--surface);}
+.mn-item-text .mn-bullets{margin:3px 0 3px 1.2em;padding:0;list-style:disc;}
+.mn-item-text .mn-bullets li{padding:1px 0;}
+.mn-edit-row{display:flex;gap:6px;flex:1;align-items:flex-start;}
+.mn-edit-row textarea{flex:1;padding:5px 8px;font-size:13px;border:1px solid var(--accent);
+  border-radius:5px;outline:none;background:var(--surface);resize:none;min-height:30px;
+  line-height:1.4;font-family:inherit;overflow:hidden;}
 .mn-edit-row button{padding:0 9px;height:28px;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;}
 .mn-edit-save{border:1px solid var(--accent);background:var(--accent);color:#fff;}
 .mn-edit-cancel{border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);}
@@ -1457,16 +1463,18 @@ const UI = {
     if (notes.length > 0) {
       html += `<div class="mn-list">` + notes.map(n =>
         `<div class="mn-item" data-nid="${n.id}">
-          <span class="mn-item-text" onclick="UI._editMeetingNote('${n.id}')" title="Click to edit">${esc(n.text)}</span>
+          <span class="mn-item-text" onclick="UI._editMeetingNote('${n.id}')" title="Click to edit">${renderNoteText(n.text)}</span>
           <button class="mn-del" onclick="event.stopPropagation();App.deleteMeetingNote('${n.id}')" title="Delete">×</button>
         </div>`
       ).join('') + `</div>`;
     }
     html += `<div class="mn-add-row">
-      <input id="mn-input" type="text" placeholder="Add a topic or note…" maxlength="300"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();UI._addMeetingNote();}">
+      <textarea id="mn-input" placeholder="Add a topic or note…" maxlength="500" rows="1"
+        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();UI._addMeetingNote();}"></textarea>
       <button onclick="UI._addMeetingNote()">+</button>
-    </div>`;
+    </div>
+    <div class="mn-hint">Shift+Enter for new line &nbsp;·&nbsp; <code>- item</code> for bullets &nbsp;·&nbsp; <code>**text**</code> for bold</div>`;
 
     el.innerHTML = html;
     this._bindCardClicks(el);
@@ -1501,15 +1509,19 @@ const UI = {
     delBtn.style.display = 'none';
     const row = document.createElement('div');
     row.className = 'mn-edit-row';
-    row.innerHTML = `<input type="text" maxlength="300" value="${esc(note.text)}">
+    row.innerHTML = `<textarea maxlength="500">${esc(note.text)}</textarea>
       <button class="mn-edit-save" onclick="UI._saveMeetingNoteEdit('${id}')">Save</button>
       <button class="mn-edit-cancel" onclick="UI._cancelMeetingNoteEdit('${id}')">✕</button>`;
     item.insertBefore(row, delBtn);
-    const inp = row.querySelector('input');
+    const inp = row.querySelector('textarea');
+    inp.style.height = 'auto';
+    inp.style.height = inp.scrollHeight + 'px';
     inp.focus();
-    inp.select();
+    const len = inp.value.length;
+    inp.setSelectionRange(len, len);
+    inp.addEventListener('input', () => { inp.style.height = 'auto'; inp.style.height = inp.scrollHeight + 'px'; });
     inp.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); UI._saveMeetingNoteEdit(id); }
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); UI._saveMeetingNoteEdit(id); }
       if (e.key === 'Escape') UI._cancelMeetingNoteEdit(id);
     });
   },
@@ -3669,6 +3681,26 @@ function json(obj) {
 function esc(str) {
   if (!str) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function renderNoteText(raw) {
+  if (!raw) return '';
+  function fmt(str) { return esc(str).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>'); }
+  const lines = raw.split('\n');
+  let html = '';
+  let inList = false;
+  lines.forEach(line => {
+    const m = line.match(/^[-*•]\s+([\s\S]*)/);
+    if (m) {
+      if (!inList) { html += '<ul class="mn-bullets">'; inList = true; }
+      html += `<li>${fmt(m[1])}</li>`;
+    } else {
+      if (inList) { html += '</ul>'; inList = false; }
+      html += `${fmt(line)}<br>`;
+    }
+  });
+  if (inList) html += '</ul>';
+  return html.replace(/(<br>)+$/, '');
 }
 
 let toastTimer;
