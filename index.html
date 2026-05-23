@@ -2801,11 +2801,11 @@ const Sync = {
         UI.renderAll();
         toast('Loaded from cloud');
       }
-      // Even if local wins on timestamp, apply cloud council if local has none configured
+      // Local data is newer overall, but always sync council from cloud —
+      // council is admin config, not user data, so cloud always wins for it.
       if (cloudTime <= localTime && cloud.council) {
-        const localHasCouncil = state.council && Object.values(state.council).some(v => v && v.trim());
         const cloudHasCouncil = Object.values(cloud.council).some(v => v && v.trim());
-        if (!localHasCouncil && cloudHasCouncil) {
+        if (cloudHasCouncil) {
           state.council = cloud.council;
           try { localStorage.setItem(COUNCIL_KEY, JSON.stringify(state.council)); } catch(e) {}
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
