@@ -441,6 +441,8 @@ button{cursor:pointer;}
   .split-queue.mob-hidden{display:none!important;}
 
   /* Bottom tab bar */
+  /* Show mobile sync indicator in topbar */
+  #mob-sync-pill{display:flex!important;}
   .mob-tabs{display:flex!important;}
 
   /* Cards — more breathing room for thumbs */
@@ -555,6 +557,10 @@ button{cursor:pointer;}
     <div class="brand">
       <div class="brand-name">TOV Work of Salvation</div>
     </div>
+    <div id="mob-sync-pill" style="display:none;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,.7);">
+      <span id="mob-sync-icon" style="font-size:13px;">☁</span>
+      <span id="mob-sync-text"></span>
+    </div>
 
     <div class="ml-auto" style="display:flex;align-items:center;gap:6px;">
       <input class="tb-user" id="tb-user" placeholder="Taking notes…"
@@ -636,10 +642,7 @@ button{cursor:pointer;}
     <span>Added This Week</span>
     <span class="mob-tab-badge" id="mob-queue-badge" style="display:none"></span>
   </button>
-  <button class="mob-tab" id="mob-tab-settings" onclick="Admin.open()">
-    <span class="mob-tab-icon">⚙</span>
-    <span>Council</span>
-  </button>
+
 </div>
 
 <!-- Mobile FAB — quick add -->
@@ -851,17 +854,20 @@ const COUNCIL_ROLES = [
 ];
 
 function loadCouncil() {
+  // Prefer council config stored in state (syncs across devices)
+  if (state && state.council) return state.council;
   try {
     const raw = localStorage.getItem(COUNCIL_KEY);
     if (raw) return JSON.parse(raw);
   } catch(e) {}
-  // Default: role labels as names until configured
   const cfg = {};
   COUNCIL_ROLES.forEach(r => { cfg[r.id] = ''; });
   return cfg;
 }
 
 function saveCouncil(cfg) {
+  // Save into state so it syncs, plus localStorage as backup
+  if (typeof state !== 'undefined') { state.council = cfg; saveState(); }
   localStorage.setItem(COUNCIL_KEY, JSON.stringify(cfg));
 }
 
@@ -1210,6 +1216,15 @@ const UI = {
     document.getElementById('tb-user').value = u;
     // Always sync to the current or next Sunday — never show a stale date
     state.meetingDate = currentSundayISO();
+
+    // Migrate council config from localStorage into state if not already there
+    if (!state.council) {
+      try {
+        const raw = localStorage.getItem(COUNCIL_KEY);
+        if (raw) state.council = JSON.parse(raw);
+      } catch(e) {}
+    }
+
     saveState();
     
     this.renderAll();
@@ -2700,7 +2715,7 @@ const Sync = {
     let cfg = {};
     try { cfg = JSON.parse(localStorage.getItem(SYNC_CONFIG_KEY)||'{}'); }
     catch(e) { console.warn('[sync] config corrupt, resetting:', e); localStorage.removeItem(SYNC_CONFIG_KEY); }
-    this.url = cfg.url || '';
+    this.url = cfg.url || 'https://script.google.com/macros/s/AKfycbzU6zc1qLIlYSwWnhV7LA6DlUoWXRtrJok-Fd8mgpR-HxTMjy-v2MzbWl4wXeheyeTTbw/exec';
     this.status = this.url ? 'idle' : 'unconfigured';
     this.updatePill();
     if (this.url) this.pull();
@@ -2771,6 +2786,10 @@ const Sync = {
         });
         state = cloud;
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
+        // Sync council config to localStorage so dropdowns work immediately
+        if (state.council) {
+          try { localStorage.setItem(COUNCIL_KEY, JSON.stringify(state.council)); } catch(e){}
+        }
         UI.renderAll();
         toast('Loaded from cloud');
       }
@@ -2807,6 +2826,15 @@ const Sync = {
     else if (this.status==='online')   txt.textContent = this.lastSyncAt ? 'Saved' : 'Connected';
     else if (this.status==='offline')  txt.textContent = 'Offline';
     else                               txt.textContent = 'Connected';
+    // Update mobile topbar sync indicator
+    const mobIcon = document.getElementById('mob-sync-icon');
+    const mobText = document.getElementById('mob-sync-text');
+    if (mobIcon) {
+      if (this.status === 'syncing')      { mobIcon.textContent = '⟳'; if(mobText) mobText.textContent = 'Syncing…'; }
+      else if (this.status === 'online')  { mobIcon.textContent = '✓'; if(mobText) mobText.textContent = this.lastSyncAt ? 'Saved' : ''; }
+      else if (this.status === 'offline') { mobIcon.textContent = '⚠'; if(mobText) mobText.textContent = 'Offline'; }
+      else                                { mobIcon.textContent = '☁'; if(mobText) mobText.textContent = ''; }
+    }
   },
 
   renderPanel() {
