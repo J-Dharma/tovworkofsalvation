@@ -2716,8 +2716,19 @@ const Admin = {
 
 
 const Sync = {
-  url: '', timer: null, lastHash: localStorage.getItem(HASH_KEY)||'',
+  url: '', timer: null, pollTimer: null, lastHash: localStorage.getItem(HASH_KEY)||'',
   status: 'unconfigured', lastSyncAt: null, lastError: null,
+
+  startPolling() {
+    clearInterval(this.pollTimer);
+    if (!this.url) return;
+    this.pollTimer = setInterval(() => {
+      if (!document.hidden) this.pull();
+    }, 30000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && this.url) this.pull();
+    }, { once: false });
+  },
 
   init() {
     let cfg = {};
@@ -2727,6 +2738,7 @@ const Sync = {
     this.status = this.url ? 'idle' : 'unconfigured';
     this.updatePill();
     if (this.url) this.pull();
+    this.startPolling();
     window.addEventListener('online', () => { if (this.status==='offline') this.push(state); });
   },
 
