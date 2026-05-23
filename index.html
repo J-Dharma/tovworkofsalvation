@@ -441,8 +441,9 @@ button{cursor:pointer;}
   .split-queue.mob-hidden{display:none!important;}
 
   /* Bottom tab bar */
-  /* Show mobile sync indicator in topbar */
+  /* Show mobile sync indicator and meeting button in topbar */
   #mob-sync-pill{display:flex!important;}
+  #mob-meeting-btn{display:block!important;}
   .mob-tabs{display:flex!important;}
 
   /* Cards — more breathing room for thumbs */
@@ -567,6 +568,8 @@ button{cursor:pointer;}
       <span id="mob-sync-icon" style="font-size:13px;">☁</span>
       <span id="mob-sync-text"></span>
     </div>
+    <button id="mob-meeting-btn" onclick="state.meetingActive?UI.openEndMeeting():App.startMeeting()"
+      style="display:none;background:none;border:none;font-size:11px;font-weight:700;color:rgba(255,255,255,.7);cursor:pointer;padding:2px 6px;">▶ Meet</button>
 
     <div class="ml-auto" style="display:flex;align-items:center;gap:6px;">
       <input class="tb-user" id="tb-user" placeholder="Taking notes…"
@@ -574,8 +577,10 @@ button{cursor:pointer;}
       <div class="sync-pill unconfigured" id="sync-pill" onclick="UI.openSync()">
         <div class="dot"></div><span id="sync-pill-text">Connect sheet</span>
       </div>
+      <span id="meeting-live-dot" style="display:none;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#ff6b6b;">⬤ LIVE</span>
       <button class="tb-btn" onclick="Admin.open()" title="Ward council members">⚙ Council</button>
-      <button class="tb-btn" onclick="UI.openEndMeeting()">End meeting</button>
+      <button class="tb-btn" id="start-meeting-btn" onclick="App.startMeeting()" style="background:rgba(77,184,138,.15);border-color:rgba(77,184,138,.4);color:#4db88a;">▶ Start meeting</button>
+      <button class="tb-btn" id="end-meeting-btn" onclick="UI.openEndMeeting()" style="display:none;">■ End meeting</button>
     </div>
   </div>
 
@@ -896,6 +901,8 @@ function councilOptions() {
 function defaultState() {
   return {
     meetingDate: todayISO(),
+    meetingActive: false,
+    lastMeetingEndDate: null,
     savedAt: null,
     people: [
       { id:'p1', familyName:'Becker', firstNames:'Jonathan',
@@ -1005,12 +1012,15 @@ function saveState() {
 
 function getQueue() {
   const d = state.meetingDate;
-  return state.people.filter(p =>
-    p.status === 'active' && (
-      p.actions.some(a => a.open) ||
-      p.queuedFor === d
-    )
-  );
+  const lastEnd = state.lastMeetingEndDate || null;
+  return state.people.filter(p => {
+    if (p.status !== 'active') return false;
+    if (p.actions.some(a => a.open)) return true;
+    if (p.queuedFor === d) return true;
+    // Auto-surface anyone touched between meetings
+    if (lastEnd && p.lastDiscussed && p.lastDiscussed > lastEnd) return true;
+    return false;
+  });
 }
 function getFollowUps() {
   return getQueue().filter(p => p.actions.some(a=>a.open));
@@ -1018,6 +1028,16 @@ function getFollowUps() {
 function getHandAdded() {
   const d = state.meetingDate;
   return getQueue().filter(p => p.queuedFor===d && !p.actions.some(a=>a.open));
+}
+function getSinceLastMeeting() {
+  const d = state.meetingDate;
+  const lastEnd = state.lastMeetingEndDate || null;
+  if (!lastEnd) return [];
+  return getQueue().filter(p =>
+    !p.actions.some(a => a.open) &&
+    p.queuedFor !== d &&
+    p.lastDiscussed && p.lastDiscussed > lastEnd
+  );
 }
 function getRoster() {
   return state.people.filter(p => p.status==='active');
@@ -1264,15 +1284,30 @@ const UI = {
     MobNav.updateBadge();
   },
 
+  updateMeetingUI() {
+    const active = !!state.meetingActive;
+    const startBtn = document.getElementById('start-meeting-btn');
+    const endBtn   = document.getElementById('end-meeting-btn');
+    const liveDot  = document.getElementById('meeting-live-dot');
+    const mobLive  = document.getElementById('mob-meeting-btn');
+    if (startBtn) startBtn.style.display = active ? 'none' : '';
+    if (endBtn)   endBtn.style.display   = active ? '' : 'none';
+    if (liveDot)  liveDot.style.display  = active ? 'flex' : 'none';
+    if (mobLive) {
+      mobLive.textContent = active ? '■ End' : '▶ Meet';
+      mobLive.style.color = active ? '#ff6b6b' : 'rgba(255,255,255,.7)';
+    }
+  },
+
   updateBadges() {
-    // badges removed from UI — counts shown in section headers only
-    
+    this.updateMeetingUI();
     const title = document.getElementById('queue-title');
     if (title) title.textContent = 'Agenda — ' + fmtDate(state.meetingDate);
     const meta = document.getElementById('queue-meta');
     if (meta) {
       const q = getQueue(), disc = q.filter(p=>p.lastDiscussed===state.meetingDate).length;
-      meta.textContent = `${q.length} individuals · ${disc} updated this meeting`;
+      const liveLabel = state.meetingActive ? ' · 🔴 Live' : '';
+      meta.textContent = `${q.length} individuals · ${disc} updated this meeting${liveLabel}`;
     }
   },
 
@@ -1282,6 +1317,7 @@ const UI = {
     this.updateBadges();
     const el = document.getElementById('queue-scroll');
     const followUps = getFollowUps();
+    const sinceLastMeeting = getSinceLastMeeting();
     const handAdded = getHandAdded();
     let html = '';
 
@@ -1290,6 +1326,11 @@ const UI = {
       html += `<div class="queue-empty">No open follow-ups — great work!</div>`;
     } else {
       followUps.forEach(p => { html += this._queueCard(p); });
+    }
+
+    if (sinceLastMeeting.length > 0) {
+      html += this._sectionHeader('Since Last Meeting', sinceLastMeeting.length, 'Activity between meetings — review and discuss');
+      sinceLastMeeting.forEach(p => { html += this._queueCard(p, 'since-last'); });
     }
 
     html += this._sectionHeader('Discussion', handAdded.length);
@@ -1312,15 +1353,15 @@ const UI = {
 
   },
 
-  _sectionHeader(label, count) {
+  _sectionHeader(label, count, subtitle) {
     return `<div class="section-header">
-      <span class="label">${label}</span>
+      <div><span class="label">${label}</span>${subtitle?`<div style="font-size:10px;color:var(--ink-3);margin-top:1px;">${subtitle}</div>`:''}</div>
       <span class="count">${count}</span>
       <div class="section-sep"></div>
     </div>`;
   },
 
-  _queueCard(p) {
+  _queueCard(p, tag) {
     const orgs = orgIdsOf(p).map(id=>orgById(id)).filter(Boolean);
     const discussed = p.lastDiscussed === state.meetingDate;
     const openActions = p.actions.filter(a=>a.open);
@@ -1328,6 +1369,7 @@ const UI = {
     const staleWks = weeksSince(p.lastDiscussed);
     let timeTag = '';
     if (discussed) timeTag = `<div class="discussed-stamp">✓ Today</div>`;
+    else if (tag==='since-last') timeTag = `<div class="discussed-stamp" style="background:rgba(196,176,0,.15);color:#7a6a00;border-color:rgba(196,176,0,.3);">↺ Active ${fmtShort(p.lastDiscussed)}</div>`;
     else if (p.lastDiscussed) timeTag = `<div class="last-seen ${staleWks>=4?'stale-stamp':''}">Last: ${fmtShort(p.lastDiscussed)}${staleWks>=4?' ⚠':''}</div>`;
     else timeTag = `<div class="last-seen" style="color:var(--ink-4);font-style:italic;">Never discussed</div>`;
 
@@ -2624,8 +2666,19 @@ const App = {
     toast(displayName(p) + ' permanently deleted');
   },
 
+  startMeeting() {
+    state.meetingActive = true;
+    saveState();
+    Sync.startPolling();
+    UI.updateMeetingUI();
+    UI.renderQueue();
+    toast('Meeting started — syncing every 10 seconds');
+  },
+
   endMeeting() {
     const nextDate = nextSundayISO();
+    state.lastMeetingEndDate = state.meetingDate;
+    state.meetingActive = false;
 
     // Capture meeting snapshot before clearing
     const queue = state.people.filter(p =>
@@ -2678,6 +2731,8 @@ const App = {
     // Keep lastDiscussed as-is (permanent record), just move the meeting date forward
     state.meetingDate = nextDate;
     saveState();
+    Sync.startPolling();
+    UI.updateMeetingUI();
     UI.renderAll();
   },
 };
@@ -2777,10 +2832,7 @@ const Sync = {
     if (!this.url) return;
     this.pollTimer = setInterval(() => {
       if (!document.hidden) this.pull();
-    }, 30000);
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && this.url) this.pull();
-    }, { once: false });
+    }, state.meetingActive ? 10000 : 30000);
   },
 
   init() {
@@ -2793,6 +2845,7 @@ const Sync = {
     if (this.url) this.pull();
     this.startPolling();
     window.addEventListener('online', () => { if (this.status==='offline') this.push(state); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && this.url) this.pull(); });
   },
 
   schedule(s) {
