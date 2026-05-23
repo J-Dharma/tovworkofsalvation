@@ -570,10 +570,6 @@ button{cursor:pointer;}
       <span id="mob-sync-icon" style="font-size:13px;">☁</span>
       <span id="mob-sync-text"></span>
     </div>
-    <button id="mob-meeting-btn" onclick="state.meetingActive?UI.openEndMeeting():App.startMeeting()"
-      style="display:none;background:none;border:none;font-size:11px;font-weight:700;color:rgba(255,255,255,.7);cursor:pointer;padding:2px 6px;">▶ Meet</button>
-    <button id="mob-cancel-btn" onclick="App.cancelMeeting()"
-      style="display:none;background:none;border:none;font-size:11px;font-weight:700;color:#ff8888;cursor:pointer;padding:2px 4px;">✕</button>
 
     <div class="ml-auto" style="display:flex;align-items:center;gap:6px;">
       <input class="tb-user" id="tb-user" placeholder="Taking notes…"
@@ -583,9 +579,11 @@ button{cursor:pointer;}
       </div>
       <span id="meeting-live-dot" style="display:none;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#ff6b6b;">⬤ LIVE</span>
       <button class="tb-btn" onclick="Admin.open()" title="Ward council members">⚙ Council</button>
-      <button class="tb-btn" id="start-meeting-btn" onclick="App.startMeeting()" style="background:rgba(77,184,138,.15);border-color:rgba(77,184,138,.4);color:#4db88a;">▶ Start meeting</button>
+      <button class="tb-btn" id="start-meeting-btn" onclick="UI.openStartMeeting()" style="background:rgba(77,184,138,.15);border-color:rgba(77,184,138,.4);color:#4db88a;">▶ Start meeting</button>
       <button class="tb-btn" id="end-meeting-btn" onclick="UI.openEndMeeting()" style="display:none;">■ End meeting</button>
       <button class="tb-btn" id="cancel-meeting-btn" onclick="App.cancelMeeting()" style="display:none;background:rgba(176,48,48,.12);border-color:rgba(176,48,48,.35);color:#c04040;">✕ Cancel</button>
+      <button id="mob-meeting-btn" onclick="state.meetingActive?UI.openEndMeeting():UI.openStartMeeting()"
+        style="display:none;background:none;border:none;font-size:11px;font-weight:700;color:rgba(255,255,255,.7);cursor:pointer;padding:2px 6px;">▶ Meet</button>
     </div>
   </div>
 
@@ -733,6 +731,24 @@ button{cursor:pointer;}
       <button class="btn sm" onclick="UI._printCurrentMeeting()">🖨 Print report</button>
       <button class="btn sm primary green" onclick="UI.confirmEndMeeting()">✓ End meeting &amp; roll to next</button>
     </div>
+  </div>
+</div>
+
+<!-- ── Start meeting modal ── -->
+<div class="modal" id="modal-start" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:none;z-index:300;box-shadow:0 8px 48px rgba(0,0,0,.28);border-radius:12px;overflow:hidden;flex-direction:column;width:340px;">
+  <button class="icon-btn modal-close" onclick="UI.closeStartMeeting()" style="position:absolute;top:12px;right:12px;z-index:2;">✕</button>
+  <div class="modal-head">
+    <div>
+      <div class="modal-name" style="font-size:16px;">Start Meeting</div>
+      <div class="modal-sub" id="start-sub"></div>
+    </div>
+  </div>
+  <div class="modal-body" style="padding:16px 20px;">
+    <p style="font-size:13px;color:var(--ink-2);line-height:1.5;">Begin the ward council meeting? Sync will increase to every 10 seconds so all devices stay current.</p>
+  </div>
+  <div class="modal-foot">
+    <button class="btn sm" onclick="UI.closeStartMeeting()">Cancel</button>
+    <button class="btn sm primary green" onclick="UI.confirmStartMeeting()">▶ Start meeting</button>
   </div>
 </div>
 
@@ -1296,7 +1312,6 @@ const UI = {
     const cancelBtn = document.getElementById('cancel-meeting-btn');
     const liveDot   = document.getElementById('meeting-live-dot');
     const mobLive   = document.getElementById('mob-meeting-btn');
-    const mobCancel = document.getElementById('mob-cancel-btn');
     if (startBtn)  startBtn.style.display  = active ? 'none' : '';
     if (endBtn)    endBtn.style.display    = active ? '' : 'none';
     if (cancelBtn) cancelBtn.style.display = active ? '' : 'none';
@@ -1305,7 +1320,6 @@ const UI = {
       mobLive.textContent = active ? '■ End' : '▶ Meet';
       mobLive.style.color = active ? '#ff6b6b' : 'rgba(255,255,255,.7)';
     }
-    if (mobCancel) mobCancel.style.display = active ? '' : 'none';
   },
 
   updateBadges() {
@@ -2357,6 +2371,23 @@ const UI = {
     toast('Meeting ended — queue rebuilt for next Sunday');
   },
 
+  // ─── Start meeting modal ──────────────────────────
+
+  openStartMeeting() {
+    const el = document.getElementById('start-sub');
+    if (el) el.textContent = fmtDate(state.meetingDate);
+    document.getElementById('modal-start').style.display = 'flex';
+  },
+
+  closeStartMeeting() {
+    document.getElementById('modal-start').style.display = 'none';
+  },
+
+  confirmStartMeeting() {
+    App.startMeeting();
+    this.closeStartMeeting();
+  },
+
   // ─── Sync modal ──────────────────────────────────
 
   _printCurrentMeeting() {
@@ -3300,6 +3331,7 @@ document.addEventListener('keydown', e => {
     if (document.getElementById('modal-detail').classList.contains('open')) UI.closeDetail();
     else if (document.getElementById('modal-add').style.display === 'flex') UI.closeAdd();
     else if (document.getElementById('modal-admin').style.display === 'flex') Admin.close();
+    else if (document.getElementById('modal-start').style.display === 'flex') UI.closeStartMeeting();
     else if (document.getElementById('modal-end').style.display === 'flex') UI.closeEndMeeting();
     else if (document.getElementById('modal-sync').style.display === 'flex') UI.closeSync();
   }
