@@ -781,6 +781,54 @@ button{cursor:pointer;}
 </div>
 
 <script>
+// ── PASSWORD PROTECTION ───────────────────────────────
+(function(){
+  const HASH='7ee569e9d8125cf5ded7e41bd7307535c78ef27aa7cc2c73409e8e6eccfe6fa9';
+  async function sha256(str){
+    const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  if(sessionStorage.getItem('tov-auth')==='1') return;
+
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:#0c3a6b;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;font-family:system-ui,sans-serif;';
+  overlay.innerHTML=`
+    <div style="text-align:center;margin-bottom:32px;">
+      <div style="font-size:32px;margin-bottom:8px;">⛪</div>
+      <div style="font-size:20px;font-weight:700;color:#fff;letter-spacing:0.05em;">TOV WORK OF SALVATION</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;letter-spacing:0.1em;text-transform:uppercase;">Ward Council</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:28px 32px;width:300px;">
+      <input id="pw-input" type="password" placeholder="Password" autocomplete="current-password"
+        style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;outline:none;font-family:inherit;margin-bottom:12px;box-sizing:border-box;"
+        onkeydown="if(event.key==='Enter') document.getElementById('pw-btn').click()" />
+      <button id="pw-btn" style="width:100%;padding:10px;border-radius:8px;border:none;background:#1473b5;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">
+        Enter
+      </button>
+      <div id="pw-err" style="color:#ff9999;font-size:12px;text-align:center;margin-top:10px;min-height:18px;"></div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  setTimeout(()=>document.getElementById('pw-input').focus(), 50);
+
+  document.getElementById('pw-btn').onclick=async function(){
+    const val=document.getElementById('pw-input').value;
+    const h=await sha256(val);
+    if(h===HASH){
+      sessionStorage.setItem('tov-auth','1');
+      overlay.style.opacity='0';
+      overlay.style.transition='opacity 0.3s';
+      setTimeout(()=>overlay.remove(), 300);
+    } else {
+      const err=document.getElementById('pw-err');
+      err.textContent='Incorrect password';
+      document.getElementById('pw-input').value='';
+      document.getElementById('pw-input').focus();
+      setTimeout(()=>err.textContent='', 2000);
+    }
+  };
+})();
+
 // ══════════════════════════════════════════════════════
 // DATA LAYER
 // ══════════════════════════════════════════════════════
