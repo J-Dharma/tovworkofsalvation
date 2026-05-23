@@ -444,6 +444,7 @@ button{cursor:pointer;}
   /* Show mobile sync indicator and meeting button in topbar */
   #mob-sync-pill{display:flex!important;}
   #mob-meeting-btn{display:block!important;}
+  #mob-cancel-btn{display:none;}/* shown via JS when meeting active */
   .mob-tabs{display:flex!important;}
 
   /* Cards — more breathing room for thumbs */
@@ -570,6 +571,8 @@ button{cursor:pointer;}
     </div>
     <button id="mob-meeting-btn" onclick="state.meetingActive?UI.openEndMeeting():App.startMeeting()"
       style="display:none;background:none;border:none;font-size:11px;font-weight:700;color:rgba(255,255,255,.7);cursor:pointer;padding:2px 6px;">▶ Meet</button>
+    <button id="mob-cancel-btn" onclick="App.cancelMeeting()"
+      style="display:none;background:none;border:none;font-size:11px;font-weight:700;color:#ff8888;cursor:pointer;padding:2px 4px;">✕</button>
 
     <div class="ml-auto" style="display:flex;align-items:center;gap:6px;">
       <input class="tb-user" id="tb-user" placeholder="Taking notes…"
@@ -581,6 +584,7 @@ button{cursor:pointer;}
       <button class="tb-btn" onclick="Admin.open()" title="Ward council members">⚙ Council</button>
       <button class="tb-btn" id="start-meeting-btn" onclick="App.startMeeting()" style="background:rgba(77,184,138,.15);border-color:rgba(77,184,138,.4);color:#4db88a;">▶ Start meeting</button>
       <button class="tb-btn" id="end-meeting-btn" onclick="UI.openEndMeeting()" style="display:none;">■ End meeting</button>
+      <button class="tb-btn" id="cancel-meeting-btn" onclick="App.cancelMeeting()" style="display:none;background:rgba(176,48,48,.12);border-color:rgba(176,48,48,.35);color:#c04040;">✕ Cancel</button>
     </div>
   </div>
 
@@ -1286,17 +1290,21 @@ const UI = {
 
   updateMeetingUI() {
     const active = !!state.meetingActive;
-    const startBtn = document.getElementById('start-meeting-btn');
-    const endBtn   = document.getElementById('end-meeting-btn');
-    const liveDot  = document.getElementById('meeting-live-dot');
-    const mobLive  = document.getElementById('mob-meeting-btn');
-    if (startBtn) startBtn.style.display = active ? 'none' : '';
-    if (endBtn)   endBtn.style.display   = active ? '' : 'none';
-    if (liveDot)  liveDot.style.display  = active ? 'flex' : 'none';
+    const startBtn  = document.getElementById('start-meeting-btn');
+    const endBtn    = document.getElementById('end-meeting-btn');
+    const cancelBtn = document.getElementById('cancel-meeting-btn');
+    const liveDot   = document.getElementById('meeting-live-dot');
+    const mobLive   = document.getElementById('mob-meeting-btn');
+    const mobCancel = document.getElementById('mob-cancel-btn');
+    if (startBtn)  startBtn.style.display  = active ? 'none' : '';
+    if (endBtn)    endBtn.style.display    = active ? '' : 'none';
+    if (cancelBtn) cancelBtn.style.display = active ? '' : 'none';
+    if (liveDot)   liveDot.style.display   = active ? 'flex' : 'none';
     if (mobLive) {
       mobLive.textContent = active ? '■ End' : '▶ Meet';
       mobLive.style.color = active ? '#ff6b6b' : 'rgba(255,255,255,.7)';
     }
+    if (mobCancel) mobCancel.style.display = active ? '' : 'none';
   },
 
   updateBadges() {
@@ -2675,6 +2683,15 @@ const App = {
     toast('Meeting started — syncing every 10 seconds');
   },
 
+  cancelMeeting() {
+    state.meetingActive = false;
+    saveState();
+    Sync.startPolling();
+    UI.updateMeetingUI();
+    UI.renderQueue();
+    toast('Meeting cancelled — no snapshot saved');
+  },
+
   endMeeting() {
     const nextDate = nextSundayISO();
     state.lastMeetingEndDate = state.meetingDate;
@@ -2724,9 +2741,10 @@ const App = {
     });
 
     // Clear hand-added queuedFor stamps for people without open actions.
+    // Use nextDate as the threshold so mismatched dates (e.g. todayISO vs Sunday) also get cleared.
     state.people.forEach(p => {
       if (p.status !== 'active') return;
-      if (p.queuedFor === state.meetingDate) p.queuedFor = null;
+      if (p.queuedFor && p.queuedFor < nextDate) p.queuedFor = null;
     });
     // Keep lastDiscussed as-is (permanent record), just move the meeting date forward
     state.meetingDate = nextDate;
