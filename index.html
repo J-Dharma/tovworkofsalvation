@@ -451,11 +451,11 @@ button{cursor:pointer;}
   .pcard-sub{gap:5px!important;}
   .split-head{padding:10px 12px 8px!important;}
 
-  /* Roster split-scroll — constrain height so it scrolls */
-  .split-roster .split-scroll{max-height:calc(100vh - 10rem);overflow-y:auto;}
+  /* Roster split-scroll — constrain height so it scrolls; extra bottom padding clears the fixed tab bar */
+  .split-roster .split-scroll{max-height:calc(100vh - 10rem);overflow-y:auto;padding-bottom:5rem;}
 
-  /* Queue scroll fills remaining space */
-  .split-queue .split-scroll{flex:1;overflow-y:auto;}
+  /* Queue scroll fills remaining space; extra bottom padding clears the fixed tab bar */
+  .split-queue .split-scroll{flex:1;overflow-y:auto;padding-bottom:5rem;}
 
   /* Modals — full screen on mobile */
   .modal{
@@ -470,6 +470,7 @@ button{cursor:pointer;}
   /* Detail modal on mobile — hide desktop-heavy sections */
   #d-covenant-wrap{display:none!important;}
   .detail-history-section{display:none!important;}
+  .modal-body{overflow-x:hidden!important;}
   .modal-head{padding:14px 44px 14px 16px!important;}
   #d-name{font-size:1.4rem!important;}
   #d-sub{font-size:0.85rem!important;}
@@ -635,11 +636,11 @@ button{cursor:pointer;}
 <div class="mob-tabs" id="mob-tabs">
   <button class="mob-tab active" id="mob-tab-roster" onclick="MobNav.show('roster')">
     <span class="mob-tab-icon">👥</span>
-    <span>Individuals</span>
+    <span>Individuals &amp; Families</span>
   </button>
   <button class="mob-tab" id="mob-tab-queue" onclick="MobNav.show('queue')">
     <span class="mob-tab-icon">📋</span>
-    <span>Added This Week</span>
+    <span>Agenda</span>
     <span class="mob-tab-badge" id="mob-queue-badge" style="display:none"></span>
   </button>
 
