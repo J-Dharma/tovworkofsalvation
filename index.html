@@ -451,8 +451,11 @@ button{cursor:pointer;}
   .pcard-sub{gap:5px!important;}
   .split-head{padding:10px 12px 8px!important;}
 
+  /* Use small viewport height so app fits when browser address bar is visible */
+  #app{height:100svh;}
+
   /* Roster split-scroll — constrain height so it scrolls; extra bottom padding clears the fixed tab bar */
-  .split-roster .split-scroll{max-height:calc(100vh - 10rem);overflow-y:auto;padding-bottom:5rem;}
+  .split-roster .split-scroll{max-height:calc(100svh - 10rem);overflow-y:auto;padding-bottom:5rem;}
 
   /* Queue scroll fills remaining space; extra bottom padding clears the fixed tab bar */
   .split-queue .split-scroll{flex:1;overflow-y:auto;padding-bottom:5rem;}
@@ -470,7 +473,9 @@ button{cursor:pointer;}
   /* Detail modal on mobile — hide desktop-heavy sections */
   #d-covenant-wrap{display:none!important;}
   .detail-history-section{display:none!important;}
-  .modal-body{overflow-x:hidden!important;}
+  /* Add-action row: stack owner input below text input on small screens */
+  .add-action-row{flex-wrap:wrap;}
+  .owner-wrap{width:100%!important;}
   .modal-head{padding:14px 44px 14px 16px!important;}
   #d-name{font-size:1.4rem!important;}
   #d-sub{font-size:0.85rem!important;}
@@ -2795,6 +2800,17 @@ const Sync = {
         }
         UI.renderAll();
         toast('Loaded from cloud');
+      }
+      // Even if local wins on timestamp, apply cloud council if local has none configured
+      if (cloudTime <= localTime && cloud.council) {
+        const localHasCouncil = state.council && Object.values(state.council).some(v => v && v.trim());
+        const cloudHasCouncil = Object.values(cloud.council).some(v => v && v.trim());
+        if (!localHasCouncil && cloudHasCouncil) {
+          state.council = cloud.council;
+          try { localStorage.setItem(COUNCIL_KEY, JSON.stringify(state.council)); } catch(e) {}
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+          UI.renderAll();
+        }
       }
       this.lastSyncAt = Date.now();
       this.setStatus('online');
