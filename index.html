@@ -763,7 +763,6 @@ const ORGS = [
   {id:'bishopric',      label:'Bishopric',      color:'#c07030'},
   {id:'relief-society', label:'Relief Society',  color:'#8a3a8a'},
   {id:'elders-quorum',  label:'Elders Quorum',   color:'#2a7aaa'},
-  {id:'young-men',      label:'Young Men',       color:'#2a6a3a'},
   {id:'young-women',    label:'Young Women',     color:'#aa4a6a'},
   {id:'primary',        label:'Primary',         color:'#4a8a3a'},
   {id:'sunday-school',  label:'Sunday School',   color:'#6a6aaa'},
@@ -1035,6 +1034,7 @@ function personById(id) {
     if (!p.gender) p.gender = 'u';
     if (p.currentStep === undefined) p.currentStep = null;
     if (!p.orgIds) p.orgIds = p.orgId ? [p.orgId] : [];
+          p.orgIds = p.orgIds.map(id => id === 'young-men' ? 'bishopric' : id).filter((id,i,a)=>a.indexOf(id)===i);
   }
   return p;
 }
@@ -2063,6 +2063,7 @@ const UI = {
     const orgChipRow = document.createElement('div');
     orgChipRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;';
     if (!p.orgIds) p.orgIds = p.orgId ? [p.orgId] : [];
+          p.orgIds = p.orgIds.map(id => id === 'young-men' ? 'bishopric' : id).filter((id,i,a)=>a.indexOf(id)===i);
     ORGS.forEach(o => {
       const active = p.orgIds.includes(o.id);
       const chip = document.createElement('button');
@@ -2856,6 +2857,7 @@ const Sync = {
           if (!p.gender) p.gender = 'u';
           if (p.currentStep === undefined) p.currentStep = null;
           if (!p.orgIds) p.orgIds = p.orgId ? [p.orgId] : [];
+          p.orgIds = p.orgIds.map(id => id === 'young-men' ? 'bishopric' : id).filter((id,i,a)=>a.indexOf(id)===i);
         });
         state = cloud;
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
@@ -3023,6 +3025,7 @@ const Sync = {
           if (!p.gender) p.gender = 'u';
           if (p.currentStep === undefined) p.currentStep = null;
           if (!p.orgIds) p.orgIds = p.orgId ? [p.orgId] : [];
+          p.orgIds = p.orgIds.map(id => id === 'young-men' ? 'bishopric' : id).filter((id,i,a)=>a.indexOf(id)===i);
         });
         state = d;
         saveState();
