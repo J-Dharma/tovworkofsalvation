@@ -777,7 +777,9 @@ const FOCUSES = [
   {id:'uniting',  label:'Uniting Families for Eternity'},
 ];
 
-function orgById(id)  { return ORGS.find(o=>o.id===id); }
+function orgById(id)   { return ORGS.find(o=>o.id===id); }
+function orgIdsOf(p)  { return (p.orgIds && p.orgIds.length) ? p.orgIds : (p.orgId ? [p.orgId] : []); }
+function orgLabels(p) { return orgIdsOf(p).map(id=>orgById(id)?.label).filter(Boolean).join(', '); }
 function focusById(id){ return FOCUSES.find(f=>f.id===id); }
 
 const FOCUS_SHORT = {
@@ -1032,6 +1034,7 @@ function personById(id) {
     if (!p.covenantPath) p.covenantPath = [];
     if (!p.gender) p.gender = 'u';
     if (p.currentStep === undefined) p.currentStep = null;
+    if (!p.orgIds) p.orgIds = p.orgId ? [p.orgId] : [];
   }
   return p;
 }
@@ -1318,7 +1321,7 @@ const UI = {
   },
 
   _queueCard(p) {
-    const org = orgById(p.orgId);
+    const orgs = orgIdsOf(p).map(id=>orgById(id)).filter(Boolean);
     const discussed = p.lastDiscussed === state.meetingDate;
     const openActions = p.actions.filter(a=>a.open);
     const cls = 'pcard' + (discussed?' discussed':'');
@@ -1346,7 +1349,7 @@ const UI = {
         <div class="pcard-info">
           <div class="pcard-name">${esc(displayName(p))}</div>
           <div class="pcard-sub">
-            ${org?`<span class="org-tag" style="border-color:${org.color}22;color:${org.color};">${org.label}</span>`:''}
+            ${orgs.map(org=>`<span class="org-tag" style="border-color:${org.color}22;color:${org.color};">${org.label}</span>`).join('')}
             ${focusTag(p.focusId)}
             ${openActions.length>0?`<span>${openActions.length} open action${openActions.length>1?'s':''}</span>`:
               `<span style="color:var(--ink-3);font-style:italic;">No actions — needs discussion</span>`}
@@ -1403,13 +1406,13 @@ const UI = {
       // Hide anyone already on the queue — they appear on the right panel instead
       const inQueue = p.queuedFor===meetingDate || p.actions.some(a=>a.open);
       if (inQueue) return false;
-      if (f !== 'all' && p.orgId !== f) return false;
+      if (f !== 'all' && !orgIdsOf(p).includes(f)) return false;
       if (ff !== 'all' && p.focusId !== ff) return false;
       if (q) {
         const hay = [p.familyName,p.firstNames,p.submittedBy,
           p.actions.map(a=>a.text+' '+a.owner).join(' '),
           p.history.map(h=>h.text).join(' '),
-          orgById(p.orgId)?.label].filter(Boolean).join(' ').toLowerCase();
+          orgLabels(p)].filter(Boolean).join(' ').toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -1417,7 +1420,7 @@ const UI = {
     people.sort((a,b)=>a.familyName.localeCompare(b.familyName));
     const d = state.meetingDate;
     el.innerHTML = people.map(p => {
-      const org = orgById(p.orgId);
+      const orgs = orgIdsOf(p).map(id=>orgById(id)).filter(Boolean);
       const inQueue = p.queuedFor===d || p.actions.some(a=>a.open);
       const openCnt = openActionCount(p);
       const wks = weeksSince(p.lastDiscussed);
@@ -1427,7 +1430,7 @@ const UI = {
           <div class="pcard-info">
             <div class="pcard-name">${esc(displayName(p))}</div>
             <div class="pcard-sub">
-              ${org?`<span class="org-tag" style="border-color:${org.color}22;color:${org.color};">${org.label}</span>`:''}
+              ${orgs.map(org=>`<span class="org-tag" style="border-color:${org.color}22;color:${org.color};">${org.label}</span>`).join('')}
               ${focusTag(p.focusId)}
               ${openCnt>0?`<span class="spill spill-open" style="font-size:10px;padding:1px 7px;">${openCnt} open</span>`:''}
               ${stale?`<span style="font-size:10px;color:var(--amber);font-weight:600;">${wks} wks ago ⚠</span>`:(p.lastDiscussed?`<span style="font-size:10px;color:var(--ink-4);">Last: ${fmtShort(p.lastDiscussed)}</span>`:'')}
@@ -1459,7 +1462,7 @@ const UI = {
       const inQueue = p.queuedFor===meetingDate || p.actions.some(a=>a.open);
       return !inQueue;
     });
-    visibleRoster.forEach(p=>{ counts[p.orgId]=(counts[p.orgId]||0)+1; });
+    visibleRoster.forEach(p=>{ orgIdsOf(p).forEach(id=>{ counts[id]=(counts[id]||0)+1; }); });
     const total = visibleRoster.length;
     const f = this._activeOrgFilter;
     el.innerHTML = `<button class="chip${f==='all'?' active':''}" onclick="UI._setOrgFilter('all')">All <span class="cnt">${total}</span></button>`
@@ -1581,14 +1584,14 @@ const UI = {
       return;
     }
     el.innerHTML = arch.map(p => {
-      const org = orgById(p.orgId);
+      const orgs = orgIdsOf(p).map(id=>orgById(id)).filter(Boolean);
       return `<div class="pcard" data-pid="${p.id}" style="border-left-color:var(--ink-4);opacity:.85;margin-bottom:5px;cursor:pointer;">
         <div class="pcard-main">
           <div class="pcard-avatar" style="background:var(--ink-4)">${initials(displayName(p))}</div>
           <div class="pcard-info">
             <div class="pcard-name">${esc(displayName(p))}</div>
             <div class="pcard-sub">
-              ${org?`<span class="org-tag">${org.label}</span>`:''}
+              ${orgs.map(org=>`<span class="org-tag">${org.label}</span>`).join('')}
               <span>Archived ${p.archivedAt?fmtDate(p.archivedAt):''}</span>
             </div>
           </div>
@@ -1621,7 +1624,6 @@ const UI = {
   },
 
   _renderDetail(p) {
-    const org = orgById(p.orgId);
     const focus = focusById(p.focusId);
     const openCnt = openActionCount(p);
     const discussed = p.lastDiscussed === state.meetingDate;
@@ -2052,7 +2054,38 @@ const UI = {
     g.appendChild(textField('First name(s)', () => p.firstNames||'', v => { p.firstNames = v; }));
     g.appendChild(textField('Submitted by', () => p.submittedBy||'', v => { p.submittedBy = v; }));
     g.appendChild(dateField('Date submitted', () => p.dateSubmitted||'', v => { p.dateSubmitted = v; }));
-    g.appendChild(selectField('Org steward', ORGS, () => p.orgId||'', v => { p.orgId = v; }));
+    // Multi-org chip group
+    const orgFieldWrap = document.createElement('div');
+    orgFieldWrap.className = 'field';
+    orgFieldWrap.style.gridColumn = '1/-1';
+    const orgFieldLbl = document.createElement('label');
+    orgFieldLbl.textContent = 'Org steward(s)';
+    const orgChipRow = document.createElement('div');
+    orgChipRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;';
+    if (!p.orgIds) p.orgIds = p.orgId ? [p.orgId] : [];
+    ORGS.forEach(o => {
+      const active = p.orgIds.includes(o.id);
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.textContent = o.label;
+      chip.dataset.id = o.id;
+      const setStyle = on => {
+        chip.style.cssText = `font-size:11.5px;padding:3px 10px;border-radius:99px;cursor:pointer;border:1px solid ${on?o.color:'var(--line-2)'};background:${on?o.color+'22':'var(--surface)'};color:${on?o.color:'var(--ink-3)'};font-weight:${on?'700':'400'};transition:all .12s;`;
+      };
+      setStyle(active);
+      chip.addEventListener('click', e => {
+        e.stopPropagation();
+        const idx = p.orgIds.indexOf(o.id);
+        if (idx === -1) p.orgIds.push(o.id);
+        else p.orgIds.splice(idx, 1);
+        setStyle(p.orgIds.includes(o.id));
+        save();
+      });
+      orgChipRow.appendChild(chip);
+    });
+    orgFieldWrap.appendChild(orgFieldLbl);
+    orgFieldWrap.appendChild(orgChipRow);
+    g.appendChild(orgFieldWrap);
     // Bishopric support — dynamic dropdown from council config
     const bishWrap = document.createElement('div');
     bishWrap.className = 'field';
@@ -2120,18 +2153,29 @@ const UI = {
 
   // ─── Add modal ───────────────────────────────────
 
+  _toggleOrgChip(btn, orgId) {
+    const active = btn.dataset.active === '1';
+    const org = orgById(orgId);
+    if (!active) {
+      btn.dataset.active = '1';
+      btn.style.cssText = `font-size:11.5px;padding:3px 10px;border-radius:99px;cursor:pointer;border:1px solid ${org.color};background:${org.color}22;color:${org.color};font-weight:700;`;
+    } else {
+      btn.dataset.active = '0';
+      btn.style.cssText = 'font-size:11.5px;padding:3px 10px;border-radius:99px;cursor:pointer;border:1px solid var(--line-2);background:var(--surface);color:var(--ink-3);font-weight:400;';
+    }
+  },
+
   openAdd(queueIt) {
     this.editingId = null;
     this.addQueueOnCreate = !!queueIt;
     document.getElementById('add-title').textContent = 'Add individual';
     document.getElementById('add-save-btn').textContent = queueIt ? 'Add & queue' : 'Add';
-    const orgOpts = ORGS.map(o=>`<option value="${o.id}">${o.label}</option>`).join('');
     const focusOpts = FOCUSES.map(f=>`<option value="${f.id}">${f.label}</option>`).join('');
     document.getElementById('add-fields').innerHTML = `
       <div class="field" style="grid-column:1/-1"><label>Name *</label><input id="nf-name" placeholder="e.g. Sofia Garcia" autofocus></div>
       <div class="field" id="nf-by-field"><label>Submitted by</label></div>
       <div class="field"><label>Date submitted</label><input type="date" id="nf-date" value="${todayISO()}"></div>
-      <div class="field"><label>Org steward</label><select id="nf-org"><option value="">— Select —</option>${orgOpts}</select></div>
+      <div class="field" style="grid-column:1/-1"><label>Org steward(s)</label><div id="nf-org-chips" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;">${ORGS.map(o=>`<button type="button" data-orgid="${o.id}" onclick="UI._toggleOrgChip(this,'${o.id}')" style="font-size:11.5px;padding:3px 10px;border-radius:99px;cursor:pointer;border:1px solid var(--line-2);background:var(--surface);color:var(--ink-3);font-weight:400;">${o.label}</button>`).join('')}</div></div>
       <div class="field"><label>Bishopric support</label><select id="nf-bish"><option value="">— Unassigned —</option>${['bishop','counselor1','counselor2'].map(rid=>{const role=COUNCIL_ROLES.find(r=>r.id===rid);const name=(loadCouncil()[rid]||'').trim();const val=name||role.label;return `<option value="${esc(val)}">${esc(name?name+' — '+role.label:role.label)}</option>`;}).join('')}<option value="__other__">Other…</option></select></div>
       <div class="field"><label>Work of Salvation focus</label><select id="nf-focus"><option value="">— Select —</option>${focusOpts}</select></div>
       <div class="field"><label>Type</label><select id="nf-gender"><option value="u">— Select —</option><option value="f">Sister</option><option value="m">Brother</option><option value="family">Family</option></select></div>
@@ -2154,6 +2198,11 @@ const UI = {
   saveAdd() {
     const fullName = document.getElementById('nf-name')?.value.trim();
     if (!fullName) { toast('Name is required'); return; }
+    // Block duplicates (case-insensitive, active roster only)
+    const nameLower = fullName.toLowerCase();
+    if (state.people.some(p => p.status !== 'archived' && displayName(p).toLowerCase() === nameLower)) {
+      toast(`${fullName} is already on the roster`); return;
+    }
     // Split into firstNames + familyName for sorting/avatar compatibility
     const parts = fullName.split(/\s+/);
     const familyName = parts.length > 1 ? parts[parts.length - 1] : fullName;
@@ -2161,11 +2210,12 @@ const UI = {
     const id = 'p' + Date.now() + Math.random().toString(36).slice(2,5);
     const note = document.getElementById('nf-note')?.value.trim();
     const user = App.currentUser || document.getElementById('nf-by')?.value.trim() || 'Ward Council';
+    const orgIds = Array.from(document.querySelectorAll('#nf-org-chips button[data-active="1"]')).map(b=>b.dataset.orgid);
     const p = {
       id, familyName, firstNames,
       submittedBy: document.getElementById('nf-by')?.value.trim()||'',
       dateSubmitted: document.getElementById('nf-date')?.value||'',
-      orgId:       document.getElementById('nf-org')?.value||'',
+      orgIds,
       focusId:     document.getElementById('nf-focus')?.value||'',
       bishopricSupport: (() => { const v = document.getElementById('nf-bish')?.value||''; return v === '__other__' ? '' : v; })(),
       gender: document.getElementById('nf-gender')?.value || 'u',
@@ -2271,7 +2321,7 @@ const UI = {
       );
       return {
         name: displayName(p),
-        org: orgById(p.orgId)?.label || '',
+        org: orgLabels(p),
         focus: focusById(p.focusId)?.label || '',
         bishopricSupport: p.bishopricSupport || '',
         notes: todayNotes.map(n => ({ text: n.text, author: n.author })),
@@ -2590,7 +2640,6 @@ const App = {
 
     // Rich per-person records for the print report
     const peopleRecords = discussed.map(p => {
-      const org = orgById(p.orgId);
       const focus = focusById(p.focusId);
       const todayNotes = (p.history || []).filter(h =>
         !h.actionId && h.at && h.at.slice(0,10) === state.meetingDate
@@ -2601,7 +2650,7 @@ const App = {
       );
       return {
         name: displayName(p),
-        org: org?.label || '',
+        org: orgLabels(p),
         focus: focus?.label || '',
         bishopricSupport: p.bishopricSupport || '',
         notes: todayNotes.map(n => ({ text: n.text, author: n.author })),
@@ -2614,7 +2663,7 @@ const App = {
     state.meetingArchive.unshift({
       id: 'm' + Date.now(),
       date: state.meetingDate,
-      discussed: discussed.map(p => ({ name: displayName(p), org: orgById(p.orgId)?.label || '', focus: focusById(p.focusId)?.label || '' })),
+      discussed: discussed.map(p => ({ name: displayName(p), org: orgLabels(p), focus: focusById(p.focusId)?.label || '' })),
       openActions,
       peopleRecords,
       savedAt: new Date().toISOString(),
@@ -2806,6 +2855,7 @@ const Sync = {
           if (!p.covenantPath) p.covenantPath = [];
           if (!p.gender) p.gender = 'u';
           if (p.currentStep === undefined) p.currentStep = null;
+          if (!p.orgIds) p.orgIds = p.orgId ? [p.orgId] : [];
         });
         state = cloud;
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
@@ -2972,6 +3022,7 @@ const Sync = {
           if (!p.covenantPath) p.covenantPath = [];
           if (!p.gender) p.gender = 'u';
           if (p.currentStep === undefined) p.currentStep = null;
+          if (!p.orgIds) p.orgIds = p.orgId ? [p.orgId] : [];
         });
         state = d;
         saveState();
