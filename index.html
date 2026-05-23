@@ -546,7 +546,8 @@ button{cursor:pointer;}
 .mtg-archive-row:last-child{border-bottom:none;}
 .mtg-archive-row .mar-who{font-weight:500;min-width:140px;}
 .mtg-archive-row .mar-org{color:var(--ink-3);font-size:12px;}
-.mtg-print-btn{font-size:12px;color:var(--accent);cursor:pointer;padding:2px 8px;border:1px solid var(--line-2);border-radius:5px;background:none;margin-left:auto;}
+.mtg-print-btn{font-size:12px;color:var(--accent);cursor:pointer;padding:2px 8px;border:1px solid var(--line-2);border-radius:5px;background:none;}
+.mtg-archive-btns{margin-left:auto;display:flex;gap:6px;flex-shrink:0;}
 .mtg-print-btn:hover{background:var(--sky);}
 
 /* ── Print ── */
@@ -1603,8 +1604,10 @@ const UI = {
                 <span>${m.discussed.length} discussed</span>
                 <span>${m.openActions.length} open action${m.openActions.length!==1?'s':''}</span>
               </span>
-              <button class="mtg-print-btn" onclick="event.stopPropagation();UI._printMeeting('ma-${i}')">Print</button>
-              <button class="mtg-print-btn" style="color:#c04040;border-color:rgba(176,48,48,.3);" onclick="event.stopPropagation();App.deleteMeeting('${m.id}')">Delete</button>
+              <div class="mtg-archive-btns">
+                <button class="mtg-print-btn" onclick="event.stopPropagation();UI._printMeeting('ma-${i}')">Print</button>
+                <button class="mtg-print-btn" style="color:#c04040;border-color:rgba(176,48,48,.3);" onclick="event.stopPropagation();App.deleteMeeting('${m.id}')">Delete</button>
+              </div>
             </div>
             <div class="mtg-archive-body" id="ma-${i}">
               <div class="mtg-archive-section">
