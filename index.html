@@ -150,7 +150,14 @@ button{cursor:pointer;}
 .mn-item{display:flex;align-items:flex-start;gap:8px;padding:7px 4px;
   border-bottom:1px solid var(--line);font-size:13px;color:var(--ink);}
 .mn-item:last-child{border-bottom:none;}
-.mn-item-text{flex:1;line-height:1.4;}
+.mn-item-text{flex:1;line-height:1.4;cursor:pointer;}
+.mn-item-text:hover{color:var(--accent);}
+.mn-edit-row{display:flex;gap:6px;flex:1;}
+.mn-edit-row input{flex:1;padding:5px 8px;font-size:13px;border:1px solid var(--accent);
+  border-radius:5px;outline:none;background:var(--surface);}
+.mn-edit-row button{padding:0 9px;height:28px;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;}
+.mn-edit-save{border:1px solid var(--accent);background:var(--accent);color:#fff;}
+.mn-edit-cancel{border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);}
 .mn-del{background:none;border:none;color:var(--ink-4);font-size:14px;cursor:pointer;
   padding:0 2px;line-height:1;flex-shrink:0;margin-top:1px;}
 .mn-del:hover{color:var(--ink-2);}
@@ -1447,19 +1454,19 @@ const UI = {
 
     const notes = state.meetingNotes || [];
     html += this._sectionHeader('Meeting Notes', notes.length);
+    if (notes.length > 0) {
+      html += `<div class="mn-list">` + notes.map(n =>
+        `<div class="mn-item" data-nid="${n.id}">
+          <span class="mn-item-text" onclick="UI._editMeetingNote('${n.id}')" title="Click to edit">${esc(n.text)}</span>
+          <button class="mn-del" onclick="event.stopPropagation();App.deleteMeetingNote('${n.id}')" title="Delete">×</button>
+        </div>`
+      ).join('') + `</div>`;
+    }
     html += `<div class="mn-add-row">
       <input id="mn-input" type="text" placeholder="Add a topic or note…" maxlength="300"
         onkeydown="if(event.key==='Enter'){event.preventDefault();UI._addMeetingNote();}">
       <button onclick="UI._addMeetingNote()">+</button>
     </div>`;
-    if (notes.length > 0) {
-      html += `<div class="mn-list">` + notes.map(n =>
-        `<div class="mn-item" data-nid="${n.id}">
-          <span class="mn-item-text">${esc(n.text)}</span>
-          <button class="mn-del" onclick="event.stopPropagation();App.deleteMeetingNote('${n.id}')" title="Delete">×</button>
-        </div>`
-      ).join('') + `</div>`;
-    }
 
     el.innerHTML = html;
     this._bindCardClicks(el);
@@ -1481,6 +1488,50 @@ const UI = {
     if (!text) return;
     inp.value = '';
     App.addMeetingNote(text);
+  },
+
+  _editMeetingNote(id) {
+    const note = (state.meetingNotes || []).find(n => n.id === id);
+    if (!note) return;
+    const item = document.querySelector(`.mn-item[data-nid="${id}"]`);
+    if (!item) return;
+    const textEl = item.querySelector('.mn-item-text');
+    const delBtn = item.querySelector('.mn-del');
+    textEl.style.display = 'none';
+    delBtn.style.display = 'none';
+    const row = document.createElement('div');
+    row.className = 'mn-edit-row';
+    row.innerHTML = `<input type="text" maxlength="300" value="${esc(note.text)}">
+      <button class="mn-edit-save" onclick="UI._saveMeetingNoteEdit('${id}')">Save</button>
+      <button class="mn-edit-cancel" onclick="UI._cancelMeetingNoteEdit('${id}')">✕</button>`;
+    item.insertBefore(row, delBtn);
+    const inp = row.querySelector('input');
+    inp.focus();
+    inp.select();
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); UI._saveMeetingNoteEdit(id); }
+      if (e.key === 'Escape') UI._cancelMeetingNoteEdit(id);
+    });
+  },
+
+  _saveMeetingNoteEdit(id) {
+    const item = document.querySelector(`.mn-item[data-nid="${id}"]`);
+    if (!item) return;
+    const inp = item.querySelector('.mn-edit-row input');
+    const text = inp ? inp.value.trim() : '';
+    if (!text) return;
+    App.editMeetingNote(id, text);
+  },
+
+  _cancelMeetingNoteEdit(id) {
+    const item = document.querySelector(`.mn-item[data-nid="${id}"]`);
+    if (!item) return;
+    const row = item.querySelector('.mn-edit-row');
+    if (row) row.remove();
+    const textEl = item.querySelector('.mn-item-text');
+    const delBtn = item.querySelector('.mn-del');
+    if (textEl) textEl.style.display = '';
+    if (delBtn) delBtn.style.display = '';
   },
 
   _sectionHeader(label, count, subtitle) {
@@ -2985,6 +3036,14 @@ const App = {
     if (!text.trim()) return;
     if (!state.meetingNotes) state.meetingNotes = [];
     state.meetingNotes.push({ id: 'mn' + Date.now(), text: text.trim() });
+    saveState();
+    UI.renderQueue();
+  },
+
+  editMeetingNote(id, text) {
+    const note = (state.meetingNotes || []).find(n => n.id === id);
+    if (!note || !text.trim()) return;
+    note.text = text.trim();
     saveState();
     UI.renderQueue();
   },
