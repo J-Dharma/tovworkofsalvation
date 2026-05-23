@@ -1880,7 +1880,7 @@ const UI = {
     let focusedIdx = -1;
 
     function buildSuggestions(q) {
-      const options = councilOptions().filter(o => o.name || o.id === 'elders');
+      const options = councilOptions().filter(o => o.name);
       const lq = q.toLowerCase();
       const matches = lq
         ? options.filter(o => o.name.toLowerCase().includes(lq) || o.label.toLowerCase().includes(lq))
