@@ -1435,14 +1435,6 @@ const UI = {
     this.updateBadges();
     const el = document.getElementById('queue-scroll');
 
-    // Preserve any in-progress note edit or add-textarea content across re-renders
-    const editingItem = el && el.querySelector('.mn-item .mn-edit-row');
-    const editingNid   = editingItem ? editingItem.closest('.mn-item')?.dataset?.nid : null;
-    const editingValue = editingNid
-      ? el.querySelector(`.mn-item[data-nid="${editingNid}"] .mn-edit-row textarea`)?.value ?? null
-      : null;
-    const addValue = el ? (el.querySelector('#mn-input')?.value || '') : '';
-
     const followUps = getFollowUps();
     const sinceLastMeeting = getSinceLastMeeting();
     const handAdded = getHandAdded();
@@ -1485,28 +1477,6 @@ const UI = {
     <div class="mn-hint">Click + to save &nbsp;·&nbsp; <code>- item</code> for bullets &nbsp;·&nbsp; <code>**text**</code> for bold</div>`;
 
     el.innerHTML = html;
-
-    // Restore add-textarea content if the user was mid-type
-    if (addValue) {
-      const addInp = el.querySelector('#mn-input');
-      if (addInp) {
-        addInp.value = addValue;
-        addInp.style.height = 'auto';
-        addInp.style.height = addInp.scrollHeight + 'px';
-      }
-    }
-    // Restore in-progress edit
-    if (editingNid !== null) {
-      this._editMeetingNote(editingNid);
-      if (editingValue !== null) {
-        const inp = el.querySelector(`.mn-item[data-nid="${editingNid}"] .mn-edit-row textarea`);
-        if (inp) {
-          inp.value = editingValue;
-          inp.style.height = 'auto';
-          inp.style.height = inp.scrollHeight + 'px';
-        }
-      }
-    }
 
     this._bindCardClicks(el);
     el.querySelectorAll('.action-check').forEach(cb => {
@@ -3349,7 +3319,7 @@ const Sync = {
         if (state.council) {
           try { localStorage.setItem(COUNCIL_KEY, JSON.stringify(state.council)); } catch(e){}
         }
-        UI.renderAll();
+        if (!_notesActive()) UI.renderAll();
         toast('Loaded from cloud');
       }
       // Local data is newer overall, but always sync council from cloud —
@@ -3362,7 +3332,7 @@ const Sync = {
           state.council = cloud.council;
           try { localStorage.setItem(COUNCIL_KEY, JSON.stringify(state.council)); } catch(e) {}
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
-          UI.renderAll();
+          if (!_notesActive()) UI.renderAll();
         }
       }
       this.lastSyncAt = Date.now();
@@ -3708,6 +3678,11 @@ function json(obj) {
 // ══════════════════════════════════════════════════════
 // UTILITIES
 // ══════════════════════════════════════════════════════
+
+function _notesActive() {
+  const inp = document.getElementById('mn-input');
+  return !!(document.querySelector('.mn-edit-row') || (inp && inp.value.trim()));
+}
 
 function esc(str) {
   if (!str) return '';
