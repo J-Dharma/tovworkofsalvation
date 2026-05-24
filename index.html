@@ -1252,7 +1252,7 @@ function renderCovenantPath(person, container) {
 
   // Label centered above the row
   const pathLabel = document.createElement('div');
-  pathLabel.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:0.10em;text-transform:uppercase;color:rgba(255,255,255,0.55);text-align:center;margin-bottom:8px;';
+  pathLabel.style.cssText = 'font-size:13px;font-weight:700;letter-spacing:0.10em;text-transform:uppercase;color:rgba(255,255,255,0.55);text-align:center;margin-bottom:8px;';
   pathLabel.textContent = 'Covenant path';
   wrap.appendChild(pathLabel);
 
@@ -1289,7 +1289,7 @@ function renderCovenantPath(person, container) {
     const lblEls = [];
     s.label.split('\n').forEach((line, li) => {
       const lbl = document.createElement('div');
-      lbl.style.cssText = `font-size:0.78em;font-weight:${li===0?600:400};
+      lbl.style.cssText = `font-size:0.65em;font-weight:${li===0?600:400};
         color:${LCOL[st]};
         text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
         width:100%;line-height:1.2;letter-spacing:0.01em;padding:0 2px;`;
