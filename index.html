@@ -1470,11 +1470,10 @@ const UI = {
     }
     html += `<div class="mn-add-row">
       <textarea id="mn-input" placeholder="Add a topic or note…" maxlength="500" rows="1"
-        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();UI._addMeetingNote();}"></textarea>
+        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
       <button onclick="UI._addMeetingNote()">+</button>
     </div>
-    <div class="mn-hint">Shift+Enter for new line &nbsp;·&nbsp; <code>- item</code> for bullets &nbsp;·&nbsp; <code>**text**</code> for bold</div>`;
+    <div class="mn-hint">Click + to save &nbsp;·&nbsp; <code>- item</code> for bullets &nbsp;·&nbsp; <code>**text**</code> for bold</div>`;
 
     el.innerHTML = html;
     this._bindCardClicks(el);
@@ -1529,7 +1528,7 @@ const UI = {
   _saveMeetingNoteEdit(id) {
     const item = document.querySelector(`.mn-item[data-nid="${id}"]`);
     if (!item) return;
-    const inp = item.querySelector('.mn-edit-row input');
+    const inp = item.querySelector('.mn-edit-row textarea');
     const text = inp ? inp.value.trim() : '';
     if (!text) return;
     App.editMeetingNote(id, text);
