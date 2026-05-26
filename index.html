@@ -929,15 +929,30 @@ function weeksSince(iso) {
   return Math.floor(ms / (7*24*60*60*1000));
 }
 function todayISO() { return new Date().toISOString().slice(0,10); }
-function nextSundayISO() {
-  const d = new Date(); const day = d.getDay();
-  d.setDate(d.getDate() + (day===0 ? 7 : 7-day));
+// Ward council meets on the 2nd and 4th Sunday of each month.
+// A Sunday is a "council Sunday" if its day-of-month falls in 8–14 (2nd) or 22–28 (4th).
+function _isCouncilSunday(d) {
+  if (d.getDay() !== 0) return false;
+  const dom = d.getDate();
+  return (dom >= 8 && dom <= 14) || (dom >= 22 && dom <= 28);
+}
+function currentCouncilSundayISO() {
+  // Returns today if it's a council Sunday, otherwise the next upcoming one.
+  const d = new Date(); d.setHours(0,0,0,0);
+  for (let i = 0; i < 28; i++) {
+    if (_isCouncilSunday(d)) return d.toISOString().slice(0,10);
+    d.setDate(d.getDate() + 1);
+  }
   return d.toISOString().slice(0,10);
 }
-function currentSundayISO() {
-  // Returns today if Sunday, otherwise the coming Sunday
-  const d = new Date(); const day = d.getDay();
-  d.setDate(d.getDate() + (day===0 ? 0 : 7-day));
+function nextCouncilSundayISO() {
+  // Returns the next council Sunday strictly after today.
+  const d = new Date(); d.setHours(0,0,0,0);
+  d.setDate(d.getDate() + 1);
+  for (let i = 0; i < 28; i++) {
+    if (_isCouncilSunday(d)) return d.toISOString().slice(0,10);
+    d.setDate(d.getDate() + 1);
+  }
   return d.toISOString().slice(0,10);
 }
 
@@ -1362,7 +1377,7 @@ const UI = {
     const u = localStorage.getItem('ct-user') || '';
     document.getElementById('tb-user').value = u;
     // Always sync to the current or next Sunday — never show a stale date
-    state.meetingDate = currentSundayISO();
+    state.meetingDate = currentCouncilSundayISO();
 
     // Migrate council config from localStorage into state if not already there
     if (!state.council) {
@@ -2524,7 +2539,7 @@ const UI = {
         html += `</div>`;
       }
 
-      const nextDate = nextSundayISO();
+      const nextDate = nextCouncilSundayISO();
       html += `<div style="margin-top:14px;padding:12px 14px;background:var(--sky);border-radius:8px;font-size:13px;color:var(--ink-2);">
         <strong>After ending:</strong> Queue will auto-rebuild from open actions for the next meeting (${fmtDate(nextDate)}). 
         Hand-added names without open actions cleared from queue. Permanent record of who was discussed kept on each card.
@@ -2541,7 +2556,7 @@ const UI = {
   confirmEndMeeting() {
     App.endMeeting();
     this.closeEndMeeting();
-    toast('Meeting ended — queue rebuilt for next Sunday');
+    toast('Meeting ended — queue rebuilt for next council meeting');
   },
 
   // ─── Start meeting modal ──────────────────────────
@@ -3070,7 +3085,7 @@ const App = {
   },
 
   endMeeting() {
-    const nextDate = nextSundayISO();
+    const nextDate = nextCouncilSundayISO();
     state.lastMeetingEndDate = state.meetingDate;
     state.meetingActive = false;
 
